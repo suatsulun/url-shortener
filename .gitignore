@@ -1,0 +1,56 @@
+# ───────────────────────────────
+# Dependencies
+# ───────────────────────────────
+node_modules/
+
+# ───────────────────────────────
+# Build outputs
+# ───────────────────────────────
+dist/
+build/
+
+# ───────────────────────────────
+# Environment variables
+# Never commit real credentials
+# ───────────────────────────────
+.env
+.env.local
+.env.production
+
+# ───────────────────────────────
+# Drizzle
+# ───────────────────────────────
+# Keep the migrations folder but ignore the journal
+# (journal is auto-generated, not meant to be edited)
+**/migrations/meta/_journal.json
+
+# ───────────────────────────────
+# Logs
+# ───────────────────────────────
+*.log
+logs/
+
+# ───────────────────────────────
+# TypeScript
+# ───────────────────────────────
+*.tsbuildinfo
+
+# ───────────────────────────────
+# Vite / Frontend
+# ───────────────────────────────
+.vite/
+
+# ───────────────────────────────
+# OS files
+# ───────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ───────────────────────────────
+# VSCode
+# ───────────────────────────────
+.vscode/
+# If you want to share VSCode settings with teammates, 
+# comment out the line above and uncomment these instead:
+# !.vscode/settings.json
+# !.vscode/extensions.json
