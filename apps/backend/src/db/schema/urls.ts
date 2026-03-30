@@ -7,7 +7,6 @@ export const urls = pgTable("urls", {
   originalUrl: text("original_url").notNull(),
   urlHash: text("url_hash").notNull().unique(),
   clicks: integer("clicks").notNull().default(0),
-
   createdAt: timestamp("created_at").defaultNow().notNull(),
   lastAccessedAt: timestamp("last_accessed_at"),
   expiresAt: timestamp("expires_at"),
