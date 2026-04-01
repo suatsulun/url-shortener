@@ -1,0 +1,25 @@
+{
+  "name": "id-generator",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node dist/id-generator.js",
+    "dev": "tsx src/id-generator.ts",
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^17.3.1",
+    "ioredis": "^5.10.1",
+    "nanoid": "^5.1.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.37",
+    "tsx": "^3.12.7",
+    "typescript": "^5.2.2"
+  }
+}

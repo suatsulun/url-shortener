@@ -4,6 +4,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { connectRedis } from "./lib/redis.js";
 import userRouter from "./routes/users.js";
+import urlRouter from "./routes/urls.js";
+import { redirectUrl } from "./controllers/urlController.js";
 
 
 const app = express();
@@ -16,7 +18,7 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 app.use("/api/users", userRouter);
-
+app.use("/api/urls", urlRouter);
 
 app.get("/health", (req, res) => {
     res.json({ status: "ok" });

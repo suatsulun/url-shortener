@@ -1,11 +1,16 @@
 import { createHash } from "crypto";
 
 export const normalizeUrl = (rawUrl: string): string => {
+    let input = rawUrl.trim();
+    if (!/^https?:\/\//i.test(input)) {
+        input = `https://${input}`;
+    }
     try {
-        const normalizedUrl = new URL(rawUrl);
-        normalizedUrl.protocol = normalizedUrl.protocol.toLowerCase();
-        normalizedUrl.hostname = normalizedUrl.hostname.toLowerCase();
-        return normalizedUrl.toString();
+        const urlObj = new URL(input);
+        urlObj.protocol = urlObj.protocol.toLowerCase();
+        urlObj.hostname = urlObj.hostname.toLowerCase();
+        urlObj.searchParams.sort();
+        return urlObj.toString().replace(/\/$/, "");
     } catch (error) {
         throw new Error("Invalid URL");
     }
