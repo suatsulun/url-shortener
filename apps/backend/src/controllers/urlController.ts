@@ -1,11 +1,13 @@
 import { Request, Response } from 'express';
 import { normalizeUrl, hashUrl } from '../lib/urlUtils.js';
-import { createUrl, findUrlByShortId, incrementClicks } from '../services/urlService.js';
+import { createUrl, findUrlByHash, findUrlByShortId, incrementClicks } from '../services/urlService.js';
 import { cfExists } from '../lib/redis.js';
 import { z } from 'zod';
+import { getOrSetCache } from '../lib/cache.js';
+import { url } from 'inspector';
 
 const paramsSchema = z.object({
-    shortId: z.string().min(1).max(7)
+    shortId: z.string().min(1).max(6)
 });
 
 export const shortenUrl = async (req: Request, res: Response) => {
@@ -44,17 +46,16 @@ export const redirectUrl = async (req: Request, res: Response) => {
         if (!existsInFilter) {
             return res.status(404).json({ error: "URL not found" });
         }
+        const urlEntry = await getOrSetCache(shortId, async () => {
+            const url = await findUrlByShortId(shortId);
+            if (!url) {
+                throw new Error("URL not found");
+            }
+            return url.originalUrl;
+        });
 
-        const urlEntry = await findUrlByShortId(shortId);
-        if (!urlEntry) {
-            return res.status(404).json({ error: "URL not found" });
-        }
-
-        incrementClicks(urlEntry.id).catch(err => 
-            console.error("Click tracking failed:", err)
-        );
-
-        return res.redirect(urlEntry.originalUrl);
+        return res.redirect(urlEntry); 
+        
     } catch (error) {
         console.error("Redirect error:", error);
         return res.status(500).json({ error: "Internal server error" });
