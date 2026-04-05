@@ -5,7 +5,12 @@ import cookieParser from "cookie-parser";
 import { connectRedis } from "./lib/redis.js";
 import userRouter from "./routes/users.js";
 import urlRouter from "./routes/urls.js";
-import { redirectUrl } from "./controllers/urlController.js";
+import "./jobs/flush/flushWorker.js";
+import { startFlushScheduler } from "./jobs/flush/flushQueue.js";
+import "./jobs/cleanup/cleanupWorker.js";
+import { startCleanupScheduler } from "./jobs/cleanup/cleanupQueue.js";
+import "./jobs/idGen/idGenWorker.js"
+import { startIdGenScheduler } from "./jobs/idGen/idGenQueue.js";
 
 
 const app = express();
@@ -26,6 +31,9 @@ app.get("/health", (req, res) => {
 
 const start = async (): Promise<void> => {
     await connectRedis();
+    await startFlushScheduler();
+    await startCleanupScheduler();
+    await startIdGenScheduler();
     const PORT = process.env.PORT ?? 3001;
     app.listen(PORT, () => {
         console.log(`Server is running on port ${PORT}`);

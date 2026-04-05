@@ -2,7 +2,7 @@ import { db } from '../db/index.js';
 import { urls } from '../db/schema/urls.js';
 import { eq, desc, and } from 'drizzle-orm';
 import { userUrls } from '../db/schema/userUrls.js';
-import {redis, cfAdd, cfExists, cfDel} from '../lib/redis.js';
+import { redis, cfAdd, cfExists, cfDel, CF_KEYS } from '../lib/redis.js';
 import { nanoid } from 'nanoid';
 import { sql } from 'drizzle-orm';
 
@@ -31,14 +31,16 @@ export const findUrlsByUserId = async (userId: number) => {
 
 export const createUrl = async (userId: number, urlHash: string, originalUrl: string) => {
     try {
-    const existingUrl = await findUrlByHash(urlHash);
-    if (existingUrl) {
-        await db.insert(userUrls).values({
-            userId,
-            urlId: existingUrl.id,
-        }).onConflictDoNothing();
-        return existingUrl.shortId;
-    }
+    const hashExistsInFilter = await cfExists(CF_KEYS.URL_HASHES, urlHash);
+        if (hashExistsInFilter) {
+            const existingUrl = await findUrlByHash(urlHash);
+            if (existingUrl) {
+                await db.insert(userUrls).values({
+                    userId,
+                    urlId: existingUrl.id,
+                }).onConflictDoNothing();
+                return existingUrl.shortId;
+    }}
     
      return await db.transaction(async (tx) => {
         let shortId: string;
@@ -54,15 +56,16 @@ export const createUrl = async (userId: number, urlHash: string, originalUrl: st
             originalUrl,
             urlHash,
             shortId,
+            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
         }).returning();
         await tx.insert(userUrls).values({
             userId,
             urlId: newUrl.id,
         });
         try {
-        await cfAdd(newUrl.shortId);
-        await cfAdd(newUrl.urlHash);}
-        catch (error) {
+            await cfAdd(CF_KEYS.SHORT_IDS, newUrl.shortId);
+            await cfAdd(CF_KEYS.URL_HASHES, newUrl.urlHash);
+        } catch (error) {
             console.error("Error adding to Redis Cuckoo Filter:", error);
         }
         return newUrl.shortId;
@@ -72,11 +75,36 @@ export const createUrl = async (userId: number, urlHash: string, originalUrl: st
         throw new Error("Failed to create short URL");}
     };
 
-export const incrementClicks = async (urlId: number) => {
+export const incrementClicks = async (shortId: string) => {
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
   await db
     .update(urls)
-    .set({ clicks: sql`${urls.clicks} + 1` })
-    .where(eq(urls.id, urlId));
+    .set({ clicks: sql`${urls.clicks} + 1`,
+           lastAccessedAt: new Date(),
+           expiresAt: thirtyDaysFromNow })
+    .where(eq(urls.shortId, shortId));
+};
+
+export const bulkUpdateClicks = async (clicks: Record<string, number>): Promise<void> => {
+    const entries = Object.entries(clicks);
+    if (entries.length === 0) return;
+
+    await Promise.all(
+        entries.map(([shortId, count]) => {
+            const thirtyDaysFromNow = new Date();
+            thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+
+            return db
+                .update(urls)
+                .set({
+                    clicks: sql`${urls.clicks} + ${count}`,
+                    lastAccessedAt: new Date(),
+                    expiresAt: thirtyDaysFromNow,
+                })
+                .where(eq(urls.shortId, shortId));
+        })
+    );
 };
 
 export const removeUrlOwnership = async (userId: number, urlId: number) => {
@@ -92,9 +120,9 @@ export const removeUrlOwnership = async (userId: number, urlId: number) => {
 
                 if (deletedUrl) {
                     try {
-                        await cfDel(deletedUrl.shortId),
-                        await cfDel(deletedUrl.urlHash),
-                        await redis.rPush("shortIdPool", deletedUrl.shortId)
+                    await cfDel(CF_KEYS.SHORT_IDS, deletedUrl.shortId);
+                    await cfDel(CF_KEYS.URL_HASHES, deletedUrl.urlHash);
+                    await redis.rPush("shortIdPool", deletedUrl.shortId)
                     } catch (redisError) {
                         console.error("Cleanup Redis failed after URL deletion:", redisError);
                     }
@@ -107,3 +135,38 @@ export const removeUrlOwnership = async (userId: number, urlId: number) => {
     }
 };
 
+export const cleanupExpiredUrls = async (): Promise<number> => {
+    let totalCleaned = 0;
+    while (true) {
+        const expiredUrls = await db
+            .select()
+            .from(urls)
+            .where(sql`${urls.expiresAt} < NOW()`)
+            .limit(100);
+        if (expiredUrls.length === 0) {
+            break;
+        }
+
+        for (const url of expiredUrls) {
+            try {
+                await db.transaction(async (tx) => {
+                    await tx.delete(userUrls).where(eq(userUrls.urlId, url.id));
+                    await tx.delete(urls).where(eq(urls.id, url.id));
+                });
+
+                await cfDel(CF_KEYS.SHORT_IDS, url.shortId);
+                await cfDel(CF_KEYS.URL_HASHES, url.urlHash);
+                await redis.del(url.shortId)
+                await redis.rPush("shortIdPool", url.shortId);
+                totalCleaned++;
+            } catch (error) {
+                console.error("Error cleaning up expired URL ${url.shortId}:", error);
+            }
+        }
+        if (expiredUrls.length < 100) {
+            break;
+        }
+    }
+    return totalCleaned;
+};
+        

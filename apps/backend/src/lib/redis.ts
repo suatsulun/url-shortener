@@ -8,7 +8,10 @@ if (!REDIS_URL) {
   throw new Error("REDIS_URL is not defined in environment variables");
 }
 
-const CF_KEY = "shorturls";
+export const CF_KEYS = {
+    SHORT_IDS: "cf:shortIds",
+    URL_HASHES: "cf:urlHashes"
+};
 
 const CF = {
     ADD: "CF.ADD",
@@ -39,17 +42,21 @@ export const connectRedis = async (): Promise<void> => {
   }
 };
 
-export const cfAdd = async (shortId: string): Promise<void> => {
-    await redisClient.sendCommand([CF.ADD, CF_KEY, shortId]);
+export const cfAdd = async (cfKey: string, value: string): Promise<void> => {
+    await redisClient.sendCommand([CF.ADD, cfKey, value]);
 }
 
-export const cfExists = async (shortId: string): Promise<boolean> => {
-    const result = await redisClient.sendCommand([CF.EXISTS, CF_KEY, shortId]);
+export const cfExists = async (cfKey: string, value: string): Promise<boolean> => {
+    const result = await redisClient.sendCommand([CF.EXISTS, cfKey, value]);
     return !!result;
 }
 
-export const cfDel = async (shortId: string): Promise<void> => {
-    await redisClient.sendCommand([CF.DEL, CF_KEY, shortId]);
+export const cfDel = async (cfKey: string, value: string): Promise<void> => {
+    await redisClient.sendCommand([CF.DEL, cfKey, value]);
 }
+
+export const incrementClickCount = async (shortId: string): Promise<void> => {
+    await redisClient.hIncrBy("clicks", shortId, 1);
+};
 
 export const redis = redisClient;

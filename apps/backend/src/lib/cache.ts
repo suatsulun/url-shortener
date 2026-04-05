@@ -5,7 +5,6 @@ export const getOrSetCache = async (key: string, fetchFunction: () => Promise<st
     try {
         const cachedValue = await redis.get(key);
         if (cachedValue) {
-    console.log("CACHE HIT:", key);
     return cachedValue;
 }
 console.log("CACHE MISS:", key);

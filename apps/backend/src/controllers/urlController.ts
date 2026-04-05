@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
 import { normalizeUrl, hashUrl } from '../lib/urlUtils.js';
-import { createUrl, findUrlByHash, findUrlByShortId, incrementClicks } from '../services/urlService.js';
-import { cfExists } from '../lib/redis.js';
+import { createUrl, findUrlByShortId } from '../services/urlService.js';
+import { cfExists, CF_KEYS } from '../lib/redis.js';
 import { z } from 'zod';
 import { getOrSetCache } from '../lib/cache.js';
-import { url } from 'inspector';
+import { incrementClickCount } from '../lib/redis.js';
+import { cleanupExpiredUrls } from '../services/urlService.js';
 
 const paramsSchema = z.object({
     shortId: z.string().min(1).max(6)
@@ -42,7 +43,7 @@ export const redirectUrl = async (req: Request, res: Response) => {
     }
     const { shortId } = result.data;
     try {
-        const existsInFilter = await cfExists(shortId);
+        const existsInFilter = await cfExists(CF_KEYS.SHORT_IDS, shortId);
         if (!existsInFilter) {
             return res.status(404).json({ error: "URL not found" });
         }
@@ -53,11 +54,22 @@ export const redirectUrl = async (req: Request, res: Response) => {
             }
             return url.originalUrl;
         });
-
-        return res.redirect(urlEntry); 
+        res.redirect(urlEntry); 
+        incrementClickCount(shortId).catch(err => console.error("Failed to increment click count:", err));
         
+
     } catch (error) {
         console.error("Redirect error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+export const triggerCleanup = async (req: Request, res: Response) => {
+    try {
+        const totalCleaned = await cleanupExpiredUrls();
+        return res.status(200).json({ message: `Cleanup complete. ${totalCleaned} URLs cleaned.`});
+        } catch (error) {
+        console.error("Cleanup error:", error);
         return res.status(500).json({ error: "Internal server error" });
     }
 };

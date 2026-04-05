@@ -19,3 +19,10 @@ export const authenticate = (req: Request, res: Response, next: NextFunction): v
 
    next();
 };
+
+export const adminAuth = (req: Request, res: Response, next: NextFunction) => {
+    if (req.headers['x-admin-key'] !== process.env.ADMIN_KEY) {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
+    next();
+};
