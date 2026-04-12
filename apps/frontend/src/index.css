@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Manrope', system-ui, sans-serif;
+  --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono: ui-monospace, Consolas, monospace;
+
+  --color-crimson: #FC3A42;
+  --color-crimson-dark: #E0242C;
+  --color-crimson-tint: #FFF1F2;
+  --color-ink: #1A1A1A;
+  --color-muted: #6B7280;
+  --color-surface: #F9FAFB;
+  --color-indigo: #6366F1;
+  --color-emerald: #10B981;
+  --color-amber: #F59E0B;
+}
+
+@layer base {
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    background: white;
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  #root {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    margin: 0;
+    font-weight: 600;
+    font-family: var(--font-heading);
+    color: var(--color-ink);
+  }
+
+  p {
+    margin: 0;
+  }
+}
