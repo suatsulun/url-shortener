@@ -28,6 +28,17 @@ export const findUrlsByUserId = async (userId: number) => {
     return allUrls;
 }
 
+export const urlOwnershipCheck = async (userId: number, urlId: number) => {
+    const url = await db
+    .select()
+    .from(userUrls)
+    .innerJoin(urls, eq(userUrls.urlId, urls.id))
+    .where(and(eq(userUrls.userId, userId), eq(userUrls.urlId, urlId)));
+    return url.length > 0;
+};
+
+
+
 
 export const createUrl = async (userId: number, urlHash: string, originalUrl: string) => {
     try {

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { normalizeUrl, hashUrl } from '../lib/urlUtils.js';
-import { createUrl, findUrlByShortId } from '../services/urlService.js';
+import { createUrl, findUrlByShortId, findUrlsByUserId, removeUrlOwnership, urlOwnershipCheck } from '../services/urlService.js';
 import { cfExists, CF_KEYS } from '../lib/redis.js';
 import { z } from 'zod';
 import { getOrSetCache } from '../lib/cache.js';
@@ -35,6 +35,18 @@ export const shortenUrl = async (req: Request, res: Response) => {
     }
 };
 
+export const getUserUrls = async (req: Request, res: Response) => {
+    try {
+        const userId = req.userId as number;
+        const urls = await findUrlsByUserId(userId);
+        return res.status(200).json(urls);
+    } catch (error) {
+        console.error("Error fetching user URLs:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+
 export const redirectUrl = async (req: Request, res: Response) => {
     const result = paramsSchema.safeParse(req.params);
 
@@ -63,6 +75,27 @@ export const redirectUrl = async (req: Request, res: Response) => {
         return res.status(500).json({ error: "Internal server error" });
     }
 };
+
+export const deleteUrl = async (req: Request, res: Response) => {
+    try {
+        const userId = req.userId as number;
+        const { shortId } = req.params as { shortId: string };
+        const url = await findUrlByShortId(shortId);
+        if (!url) {
+            return res.status(404).json({ error: "URL not found" });
+        }
+        const userUrls = await urlOwnershipCheck(userId, url.id);
+        if (!userUrls) {
+            return res.status(403).json({ error: "You do not have permission to delete this URL" });
+        }
+        await removeUrlOwnership(userId, url.id);
+        return res.status(204).send();
+        } catch (error) {
+        console.error("Deletion error:" , error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+};
+
 
 export const triggerCleanup = async (req: Request, res: Response) => {
     try {
