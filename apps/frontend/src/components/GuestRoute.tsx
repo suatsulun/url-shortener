@@ -1,5 +1,5 @@
-import { Outlet, Navigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { Outlet, Navigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 const GuestRoute = () => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -9,12 +9,10 @@ const GuestRoute = () => {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />
-;
+    return <Navigate to="/dashboard" replace />;
   }
 
-
   return <Outlet />;
-};  
+};
 
 export default GuestRoute;

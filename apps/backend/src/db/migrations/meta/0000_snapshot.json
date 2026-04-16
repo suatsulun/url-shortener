@@ -52,9 +52,7 @@
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -134,16 +132,12 @@
         "urls_short_id_unique": {
           "name": "urls_short_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "short_id"
-          ]
+          "columns": ["short_id"]
         },
         "urls_url_hash_unique": {
           "name": "urls_url_hash_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "url_hash"
-          ]
+          "columns": ["url_hash"]
         }
       },
       "policies": {},
@@ -180,12 +174,8 @@
           "name": "user_urls_user_id_users_id_fk",
           "tableFrom": "user_urls",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -193,12 +183,8 @@
           "name": "user_urls_url_id_urls_id_fk",
           "tableFrom": "user_urls",
           "tableTo": "urls",
-          "columnsFrom": [
-            "url_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["url_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -206,10 +192,7 @@
       "compositePrimaryKeys": {
         "user_urls_user_id_url_id_pk": {
           "name": "user_urls_user_id_url_id_pk",
-          "columns": [
-            "user_id",
-            "url_id"
-          ]
+          "columns": ["user_id", "url_id"]
         }
       },
       "uniqueConstraints": {},

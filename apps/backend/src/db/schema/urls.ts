@@ -1,6 +1,5 @@
 import { pgTable, text, integer, timestamp } from "drizzle-orm/pg-core";
 
-
 export const urls = pgTable("urls", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   shortId: text("short_id").notNull().unique(),

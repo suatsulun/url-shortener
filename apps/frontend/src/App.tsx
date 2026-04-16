@@ -13,11 +13,7 @@ import Edit from "./pages/profile/Edit";
 import GuestRoute from "./components/GuestRoute";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-
 const App = () => {
-
-
-
   return (
     <BrowserRouter>
       <Routes>

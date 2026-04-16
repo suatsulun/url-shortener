@@ -9,31 +9,32 @@ if (!REDIS_URL) {
 }
 
 export const CF_KEYS = {
-    SHORT_IDS: "cf:shortIds",
-    URL_HASHES: "cf:urlHashes"
+  SHORT_IDS: "cf:shortIds",
+  URL_HASHES: "cf:urlHashes",
 };
 
 const CF = {
-    ADD: "CF.ADD",
-    EXISTS: "CF.EXISTS",
-    DEL: "CF.DEL",
+  ADD: "CF.ADD",
+  EXISTS: "CF.EXISTS",
+  DEL: "CF.DEL",
 };
 
-
 redisClient = createClient({
-    url: REDIS_URL,
-    socket: {
-        reconnectStrategy: (retries) => {
-            if (retries > 10) return new Error("Redis reconnection failed");
-            return Math.min(retries * 50, 2000);
-    }
-  }
+  url: REDIS_URL,
+  socket: {
+    reconnectStrategy: (retries) => {
+      if (retries > 10) return new Error("Redis reconnection failed");
+      return Math.min(retries * 50, 2000);
+    },
+  },
 });
 
 redisClient.on("error", (err) => console.error("Redis Client Error:", err));
 redisClient.on("connect", () => console.log("Redis Client Connecting..."));
 redisClient.on("ready", () => console.log("Redis Client Ready"));
-redisClient.on("reconnecting", () => console.log("Redis Client Reconnecting..."));
+redisClient.on("reconnecting", () =>
+  console.log("Redis Client Reconnecting..."),
+);
 redisClient.on("end", () => console.log("Redis Client Disconnected"));
 
 export const connectRedis = async (): Promise<void> => {
@@ -43,20 +44,23 @@ export const connectRedis = async (): Promise<void> => {
 };
 
 export const cfAdd = async (cfKey: string, value: string): Promise<void> => {
-    await redisClient.sendCommand([CF.ADD, cfKey, value]);
-}
+  await redisClient.sendCommand([CF.ADD, cfKey, value]);
+};
 
-export const cfExists = async (cfKey: string, value: string): Promise<boolean> => {
-    const result = await redisClient.sendCommand([CF.EXISTS, cfKey, value]);
-    return !!result;
-}
+export const cfExists = async (
+  cfKey: string,
+  value: string,
+): Promise<boolean> => {
+  const result = await redisClient.sendCommand([CF.EXISTS, cfKey, value]);
+  return !!result;
+};
 
 export const cfDel = async (cfKey: string, value: string): Promise<void> => {
-    await redisClient.sendCommand([CF.DEL, cfKey, value]);
-}
+  await redisClient.sendCommand([CF.DEL, cfKey, value]);
+};
 
 export const incrementClickCount = async (shortId: string): Promise<void> => {
-    await redisClient.hIncrBy("clicks", shortId, 1);
+  await redisClient.hIncrBy("clicks", shortId, 1);
 };
 
 export const redis = redisClient;

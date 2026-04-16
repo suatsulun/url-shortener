@@ -1,10 +1,16 @@
 import { Router } from "express";
 import { authenticate } from "../middleware/authenticate.js";
-import { changePassword, deleteMe, editMe, getCurrentUser, login, logout, register } from "../controllers/userController.js";
-
+import {
+  changePassword,
+  deleteMe,
+  editMe,
+  getCurrentUser,
+  login,
+  logout,
+  register,
+} from "../controllers/userController.js";
 
 const router = Router();
-
 
 router.post("/register", register);
 router.post("/login", login);
@@ -15,8 +21,4 @@ router.patch("/me/password", authenticate, changePassword);
 router.delete("/me", authenticate, deleteMe);
 router.post("/logout", authenticate, logout);
 
-
-
-
 export default router;
-

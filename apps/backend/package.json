@@ -7,10 +7,12 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
+    "lint": "prettier --check .",
     "start": "node dist/index.js",
     "db:generate": "drizzle-kit generate --config=src/drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config=src/drizzle.config.ts",
-    "db:studio": "drizzle-kit studio --config=src/drizzle.config.ts"
+    "db:studio": "drizzle-kit studio --config=src/drizzle.config.ts",
+    "format": "prettier --write ."
   },
   "keywords": [],
   "author": "",
@@ -42,6 +44,7 @@
     "@types/node": "^25.5.0",
     "@types/pg": "^8.20.0",
     "drizzle-kit": "^0.31.10",
+    "prettier": "3.8.3",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2"
   }

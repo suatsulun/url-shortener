@@ -1,7 +1,6 @@
 import { useParams } from "react-router-dom";
 
 const Redirect = () => {
-
   const { shortId } = useParams();
   console.log(shortId);
 

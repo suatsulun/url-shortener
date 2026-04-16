@@ -1,28 +1,31 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyToken } from "../lib/jwt.js";
 
-export const authenticate = (req: Request, res: Response, next: NextFunction): void => {
+export const authenticate = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void => {
+  if (!req.cookies.token) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
 
-   if (!req.cookies.token) {
-        res.status(401).json({ error: "Not authenticated" });
-        return;
-   }
+  const userId = verifyToken(req.cookies.token);
 
-    const userId = verifyToken(req.cookies.token);
+  if (!userId) {
+    res.status(401).json({ error: "Invalid token" });
+    return;
+  }
 
-    if (!userId) {
-        res.status(401).json({ error: "Invalid token" });
-        return;
-    }
+  req.userId = userId;
 
-    req.userId = userId;
-
-   next();
+  next();
 };
 
 export const adminAuth = (req: Request, res: Response, next: NextFunction) => {
-    if (req.headers['x-admin-key'] !== process.env.ADMIN_KEY) {
-        return res.status(401).json({ error: "Unauthorized" });
-    }
-    next();
+  if (req.headers["x-admin-key"] !== process.env.ADMIN_KEY) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  next();
 };

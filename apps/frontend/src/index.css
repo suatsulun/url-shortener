@@ -1,23 +1,22 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: 'Manrope', system-ui, sans-serif;
-  --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-sans: "Manrope", system-ui, sans-serif;
+  --font-heading: "Plus Jakarta Sans", system-ui, sans-serif;
   --font-mono: ui-monospace, Consolas, monospace;
 
-  --color-crimson: #FC3A42;
-  --color-crimson-dark: #E0242C;
-  --color-crimson-tint: #FFF1F2;
-  --color-ink: #1A1A1A;
-  --color-muted: #6B7280;
-  --color-surface: #F9FAFB;
-  --color-indigo: #6366F1;
-  --color-emerald: #10B981;
-  --color-amber: #F59E0B;
+  --color-crimson: #fc3a42;
+  --color-crimson-dark: #e0242c;
+  --color-crimson-tint: #fff1f2;
+  --color-ink: #1a1a1a;
+  --color-muted: #6b7280;
+  --color-surface: #f9fafb;
+  --color-indigo: #6366f1;
+  --color-emerald: #10b981;
+  --color-amber: #f59e0b;
 }
 
 @layer base {
-
   *,
   *::before,
   *::after {
