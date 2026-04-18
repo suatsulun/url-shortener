@@ -1,11 +1,13 @@
 import { Request, Response } from "express";
 import * as userService from "../services/userService.js";
-import { generateToken } from "../lib/jwt.js";
+import { generateToken, setAuthCookie } from "../lib/jwt.js";
 
 export const register = async (req: Request, res: Response) => {
   try {
     const { username, email, password } = req.body;
     const user = await userService.createUser(username, email, password);
+    const tokenValue = generateToken(user.id);
+    setAuthCookie(res, tokenValue);
     res.status(201).json(user);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -32,16 +34,12 @@ export const login = async (req: Request, res: Response) => {
   }
   const tokenValue = generateToken(user.id);
 
-  res.cookie("token", tokenValue, {
-    httpOnly: true,
-    secure: false,
-    sameSite: "strict",
-    maxAge: 30 * 24 * 60 * 60 * 1000,
-  });
-
+  setAuthCookie(res, tokenValue);
+  
   const { passwordHash: _, ...userWithoutPassword } = user;
   res.json(userWithoutPassword);
 };
+
 
 export const logout = (req: Request, res: Response) => {
   res.clearCookie("token");

@@ -14,3 +14,12 @@ export const verifyToken = (token: string): number | null => {
     return null;
   }
 };
+
+export const setAuthCookie = (res: any, token: string) => {
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: false,
+    sameSite: "strict",
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+  });
+}
