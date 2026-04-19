@@ -11,9 +11,9 @@ import {
 const router = Router();
 
 router.post("/shorten", authenticate, shortenUrl);
-router.get("/:shortId", redirectUrl);
 router.get("/me", authenticate, getUserUrls);
 router.delete("/:shortId", authenticate, deleteUrl);
 router.post("/admin/cleanup", adminAuth, triggerCleanup);
+router.get("/:shortId", redirectUrl);
 
 export default router;

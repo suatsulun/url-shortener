@@ -5,15 +5,46 @@
   --font-heading: "Plus Jakarta Sans", system-ui, sans-serif;
   --font-mono: ui-monospace, Consolas, monospace;
 
+  --animate-slide-in-left: slide-in-left 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-slide-in-right: slide-in-right 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+
   --color-crimson: #fc3a42;
   --color-crimson-dark: #e0242c;
   --color-crimson-tint: #fff1f2;
+  --color-crimson-bright: #ff5058;
   --color-ink: #1a1a1a;
   --color-muted: #6b7280;
   --color-surface: #f9fafb;
   --color-indigo: #6366f1;
   --color-emerald: #10b981;
+  --color-emerald-dark: #059669;
   --color-amber: #f59e0b;
+  --color-danger: #FF0000;
+  --color-danger-dark: #BF0404;
+}
+
+@keyframes slide-in-left {
+  from {
+    transform: translateX(-120px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(120px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 @layer base {
@@ -51,4 +82,24 @@
   p {
     margin: 0;
   }
+}
+
+.mode-login [data-slot="label"] {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.mode-login input {
+  background: #ffffff;
+  border-color: transparent;
+  color: var(--color-ink);
+}
+
+.mode-register [data-slot="label"] {
+  color: #c02028;
+}
+
+.mode-register input {
+  background: var(--color-crimson-tint);
+  border-color: transparent;
+  color: var(--color-ink);
 }

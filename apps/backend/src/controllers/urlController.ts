@@ -14,7 +14,7 @@ import { incrementClickCount } from "../lib/redis.js";
 import { cleanupExpiredUrls } from "../services/urlService.js";
 
 const paramsSchema = z.object({
-  shortId: z.string().min(1).max(6),
+  shortId: z.string().min(1).max(6).regex(/^[A-Za-z0-9_-]+$/),
 });
 
 export const shortenUrl = async (req: Request, res: Response) => {
@@ -23,7 +23,7 @@ export const shortenUrl = async (req: Request, res: Response) => {
     const userId = req.userId as number;
 
     if (!originalUrl) {
-      return res.status(400).json({ error: "URL is required" });
+      return res.status(404).json({ error: "URL not found" });
     }
 
     const normalized = normalizeUrl(originalUrl);
@@ -37,7 +37,7 @@ export const shortenUrl = async (req: Request, res: Response) => {
       originalUrl: normalized,
     });
   } catch (error: any) {
-    return res.status(400).json({ error: error.message });
+    return res.status(404).json({ error: error.message });
   }
 };
 

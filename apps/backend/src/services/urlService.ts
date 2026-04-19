@@ -19,13 +19,18 @@ export const findUrlByShortId = async (shortId: string) => {
 };
 
 export const findUrlsByUserId = async (userId: number) => {
-  const allUrls = await db
-    .select()
+  return db
+    .select({
+      shortId: urls.shortId,
+      originalUrl: urls.originalUrl,
+      clicks: urls.clicks,
+      expiresAt: urls.expiresAt,
+      createdAt: userUrls.createdAt,
+    })
     .from(userUrls)
     .innerJoin(urls, eq(userUrls.urlId, urls.id))
     .where(eq(userUrls.userId, userId))
     .orderBy(desc(userUrls.createdAt));
-  return allUrls;
 };
 
 export const urlOwnershipCheck = async (userId: number, urlId: number) => {
