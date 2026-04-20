@@ -13,6 +13,11 @@ const Header = () => {
     navigate("/login", { replace: true });
   };
 
+  const displayName = user?.username
+    ? user.username.charAt(0).toUpperCase() + user.username.slice(1)
+    : "";
+
+
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-ink/10 bg-white px-6">
       <Link to="/dashboard" className="flex items-center gap-3">
@@ -25,7 +30,9 @@ const Header = () => {
       <Menu>
         <MenuTrigger className="flex items-center gap-3 rounded-lg px-3 py-1.5 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-crimson-bright border-1 border-crimson">
           <div className="flex flex-col items-start leading-tight">
-            <span className="text-sm font-semibold text-ink">{user?.username.charAt(0)?.toUpperCase() + user?.username?.slice(1)}</span>
+            <span className="text-sm font-semibold text-ink">
+              {displayName}
+            </span>
             <span className="text-xs text-muted">{user?.email}</span>
           </div>
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-crimson text-sm font-bold text-white">
@@ -38,7 +45,10 @@ const Header = () => {
           <MenuItem onClick={() => navigate("/shorten")}>Shorten</MenuItem>
           <MenuItem onClick={() => navigate("/profile")}>Profile</MenuItem>
           <MenuSeparator />
-          <MenuItem onClick={handleLogout} className="text-danger data-[highlighted]:bg-danger/10 data-[highlighted]:text-danger">
+          <MenuItem
+            onClick={handleLogout}
+            className="text-danger data-[highlighted]:bg-danger/10 data-[highlighted]:text-danger"
+          >
             <LogOut className="h-4 w-4" />
             <span>Logout</span>
           </MenuItem>

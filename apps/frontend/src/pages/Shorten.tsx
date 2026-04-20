@@ -1,6 +1,8 @@
-import {useState} from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router";
 import { api } from "../lib/api";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import {
   Form,
   FormField,
@@ -8,7 +10,6 @@ import {
   FormControl,
   FormError,
 } from "@/components/ui/Form";
-import { useNavigate } from "react-router";
 
 const Shorten = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -17,7 +18,7 @@ const Shorten = () => {
 
   const shortenAction = async (formData: FormData) => {
     setError(null);
-    setIsSubmitting(true); 
+    setIsSubmitting(true);
     try {
       const url = formData.get("url") as string;
       const { data } = await api.post("/urls/shorten", { originalUrl: url });
@@ -31,19 +32,43 @@ const Shorten = () => {
   };
 
   return (
-    <Form action={shortenAction}>
-      <FormField>
-        <FormLabel>Enter URL to shorten</FormLabel>
-        <FormControl
-          type="url"
-          name="url"
-          placeholder="https://example.com"
-          required
-        />
-        <FormError/>
-      </FormField>
-      <Button loading={isSubmitting} type="submit" className="mt-4">Shorten</Button>
-    </Form>
+    <div className="mx-auto mt-16 w-full max-w-xl px-4">
+      <Card variant="elevated" padding="lg" className="flex flex-col gap-6">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold tracking-tight text-crimson items-center justify-center flex">
+            Shorten a URL
+          </h1>
+          <p className="text-sm text-muted">
+            Paste a long link and we'll give you a short one to share.
+          </p>
+        </div>
+
+        <Form action={shortenAction} className="flex flex-col gap-4">
+          <FormField>
+            <FormLabel>URL</FormLabel>
+            <FormControl
+              type="text"
+              name="url"
+              placeholder="example.com or https://example.com"
+              pattern="^(https?:\/\/)?[^\s]+\.[^\s]+$"
+              required
+            />
+            <FormError match="valueMissing">URL is required</FormError>
+            <FormError match="patternMismatch">
+              Enter a valid URL like "example.com"
+            </FormError>
+          </FormField>
+
+          {error && <p className="text-sm text-red-600">{error}</p>}
+
+          <div className="flex items-center justify-center">
+            <Button loading={isSubmitting} type="submit">
+              Shorten
+            </Button>
+          </div>
+        </Form>
+      </Card>
+    </div>
   );
 };
 

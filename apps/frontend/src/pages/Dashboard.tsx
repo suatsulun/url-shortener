@@ -10,7 +10,7 @@ import {
   TableCell,
 } from "@/components/ui/Table";
 import { Button } from '@/components/ui/Button';
-import { Trash2Icon } from 'lucide-react';
+import { Trash2Icon, CopyIcon, CheckIcon } from "lucide-react";
 
 
 
@@ -18,6 +18,7 @@ import { Trash2Icon } from 'lucide-react';
 
 const Dashboard = () => {
   const [urls, setUrls] = useState<Url[]>([]);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const handleDelete = async (shortId: string) => {
     try {
       await api.delete(`/urls/${shortId}`);
@@ -26,6 +27,16 @@ const Dashboard = () => {
       console.error('Failed to delete URL', err);
     }
   };
+
+  const copy = async ( value: string ) => {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/${value}`);
+      setCopiedId(value);
+    } catch (err) {
+      console.error("Failed to copy URL", err);
+    }
+  };
+
   useEffect(() => {
     const fetchUrls = async () => {
       try {
@@ -42,49 +53,69 @@ const Dashboard = () => {
 
   return (
     <div className="mx-auto max-w-7xl p-6">
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Short URL</TableHead>
-          <TableHead>Original URL</TableHead>
-          <TableHead>Clicks</TableHead>
-          <TableHead>Created At</TableHead>
-          <TableHead>Expires At</TableHead>
-          <TableHead>Delete</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {urls.map((url) => (
-          <TableRow key={url.shortId}>
-            <TableCell>
-              <a
-                href={`${window.location.origin}/${url.shortId}`}
-                target="_blank"
-                rel="noreferrer"
-                className="font-mono text-crimson hover:underline"
-              >
-                /{url.shortId}
-              </a>
-            </TableCell>
-            <TableCell>
-              <a
-                href={url.originalUrl}
-                target="_blank"
-                rel="noreferrer"
-                title={url.originalUrl}
-                className="block max-w-xs truncate text-ink hover:text-crimson hover:underline"
-              >
-                {url.originalUrl}
-              </a>
-            </TableCell>
-            <TableCell>{url.clicks}</TableCell>
-            <TableCell>{new Date(url.createdAt).toLocaleString()}</TableCell>
-            <TableCell>{new Date(url.expiresAt).toLocaleString()}</TableCell>
-            <TableCell><Button variant="destructive" onClick={() => handleDelete(url.shortId)}> <Trash2Icon className='h-5' />Delete</Button> </TableCell>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Short URL</TableHead>
+            <TableHead>Original URL</TableHead>
+            <TableHead>Clicks</TableHead>
+            <TableHead>Created At</TableHead>
+            <TableHead>Expires At</TableHead>
+            <TableHead>Delete</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {urls.map((url) => (
+            <TableRow key={url.shortId}>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`${window.location.origin}/${url.shortId}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-mono text-crimson hover:underline"
+                  >
+                    /{url.shortId}
+                  </a>
+                  <Button
+                    onClick={() =>
+                      copy(`${url.shortId}`)
+                    }
+                    variant={copiedId === url.shortId ? "success" : "ghost"}
+                    className="h-7 w-7 p-0"
+                  >
+                    {copiedId === url.shortId ? <CheckIcon /> : <CopyIcon />}
+                  </Button>
+                </div>
+              </TableCell>
+              <TableCell>
+                <a
+                  href={url.originalUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={url.originalUrl}
+                  className="block max-w-xs truncate text-ink hover:text-crimson hover:underline"
+                >
+                  {url.originalUrl}
+                </a>
+              </TableCell>
+              <TableCell>{url.clicks}</TableCell>
+              <TableCell>{new Date(url.createdAt).toLocaleString()}</TableCell>
+              <TableCell>{new Date(url.expiresAt).toLocaleString()}</TableCell>
+              <TableCell>
+                <Button
+                  variant="destructive"
+                  onClick={() => handleDelete(url.shortId)}
+                >
+                  {" "}
+                  <Trash2Icon className="h-5" />
+                  Delete
+                </Button>{" "}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 };

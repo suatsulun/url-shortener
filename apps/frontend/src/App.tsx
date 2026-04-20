@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import Shorten from "./pages/Shorten";
-import Redirect from "./pages/Redirect";
 import Auth from "./pages/Auth";
 import LinkCreated from "./pages/LinkCreated";
 import NotFound from "./pages/NotFound";
@@ -17,7 +16,6 @@ const App = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/:shortId" element={<Redirect />} />
         <Route path="*" element={<NotFound />} />
 
         <Route element={<GuestRoute />}>

@@ -11,11 +11,17 @@ export default defineConfig({
     },
   },
   server: {
-    proxy: {
-      "/api": {
-        target: "http://localhost:3001",
-        changeOrigin: true,
-      },
+    host: true,
+    port: 5173,
+    // HMR connects through nginx on :8080, not directly to Vite on :5173
+    hmr: {
+      clientPort: 8080,
+    },
+    watch: {
+      // Docker volume mounts don't always emit filesystem events on Linux/WSL;
+      // polling is the reliable fallback for hot reload.
+      usePolling: true,
+      interval: 300,
     },
   },
 });

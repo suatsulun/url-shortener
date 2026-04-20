@@ -26,7 +26,7 @@ app.use(cookieParser());
 app.use("/api/users", userRouter);
 app.use("/api/urls", urlRouter);
 
-app.get("/health", (req, res) => {
+app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 

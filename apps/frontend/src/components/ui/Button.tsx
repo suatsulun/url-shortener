@@ -11,7 +11,7 @@ const buttonVariants = cva(
             variant: {
                 primary: "bg-crimson text-white hover:bg-crimson-dark",
                 secondary: "bg-white text-crimson border border-ink/10 hover:border-white hover:bg-crimson-bright hover:text-white" ,
-                ghost: "bg-transparent text-ink hover:bg-surface",
+                ghost: "bg-transparent text-ink hover:bg-surface hover:text-crimson hover:border-1 border-crimson",
                 destructive: "bg-danger text-white hover:bg-danger-dark",
                 success: "bg-emerald text-white hover:bg-emerald-dark",
                 link: "bg-transparent text-crimson underline-offset-4 hover:text-crimson-bright hover:underline p-0 h-auto",
