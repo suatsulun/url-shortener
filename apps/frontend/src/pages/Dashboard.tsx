@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/Table";
 import { Button } from '@/components/ui/Button';
 import { Trash2Icon, CopyIcon, CheckIcon } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
 
 
 
@@ -19,6 +20,10 @@ import { Trash2Icon, CopyIcon, CheckIcon } from "lucide-react";
 const Dashboard = () => {
   const [urls, setUrls] = useState<Url[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const navigate = useNavigate();
   const handleDelete = async (shortId: string) => {
     try {
       await api.delete(`/urls/${shortId}`);
@@ -40,11 +45,15 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchUrls = async () => {
       try {
+        setIsLoading(true);
         const response = await api.get('/urls/me');
         setUrls(response.data);
       } catch (err) {
         console.error('Failed to fetch URLs', err);
-      } 
+        setError('Failed to fetch URLs');
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchUrls();
@@ -53,6 +62,14 @@ const Dashboard = () => {
 
   return (
     <div className="mx-auto max-w-7xl p-6">
+    {isLoading ? (
+      <div className="flex flex-col items-center gap-4 py-16 text-muted"><p>Loading...</p>
+    </div>) : error ? (
+      <div className="flex flex-col items-center gap-4 py-16 text-muted"><p className="text-red-500">{error}</p></div>
+    ) : urls.length === 0 ? (<div className="flex flex-col items-center gap-4 py-16 text-muted">
+      <p>No URLs found!</p>
+      <Button size="lg" onClick={() => navigate('/shorten')}>Create your first Short URL</Button></div>
+    ) : (
       <Table>
         <TableHeader>
           <TableRow>
@@ -115,7 +132,7 @@ const Dashboard = () => {
             </TableRow>
           ))}
         </TableBody>
-      </Table>
+      </Table>)}
     </div>
   );
 };

@@ -2,12 +2,13 @@ import { api } from "@/lib/api";
 import { createContext, useState, useEffect } from "react";
 
 export interface AuthContextType {
-  user: any;
+  user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (loginName: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
+  updateUser: (user: User) => void;
 }
 
 export interface User {
@@ -24,6 +25,7 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => {},
   logout: async () => {},
   register: async () => {},
+  updateUser: () => {},
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -56,6 +58,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setUser(data);
       }
   };
+  
+  const updateUser = (user: User) => {
+    setUser(user);
+  };
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -79,7 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, logout, register }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, logout, register, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

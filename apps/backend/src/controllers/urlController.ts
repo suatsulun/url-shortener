@@ -56,13 +56,13 @@ export const redirectUrl = async (req: Request, res: Response) => {
   const result = paramsSchema.safeParse(req.params);
 
   if (!result.success) {
-    return res.status(400).json({ error: "Invalid parameters" });
+    return res.redirect("/not-found");
   }
   const { shortId } = result.data;
   try {
     const existsInFilter = await cfExists(CF_KEYS.SHORT_IDS, shortId);
     if (!existsInFilter) {
-      return res.status(404).json({ error: "URL not found" });
+      return res.redirect("/not-found");
     }
     const urlEntry = await getOrSetCache(shortId, async () => {
       const url = await findUrlByShortId(shortId);
@@ -75,7 +75,10 @@ export const redirectUrl = async (req: Request, res: Response) => {
     incrementClickCount(shortId).catch((err) =>
       console.error("Failed to increment click count:", err),
     );
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.message === "URL not found") {
+      return res.redirect("/not-found");
+    }
     console.error("Redirect error:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
