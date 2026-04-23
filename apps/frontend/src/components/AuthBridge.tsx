@@ -1,6 +1,6 @@
 import { setOnUnauthorized } from "@/lib/api";
 import { useEffect } from "react";
-import { replace, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
 

@@ -39,7 +39,7 @@ export const TableRow = ({ className, ...rest }: RowProps) => (
 export const TableHead = ({ className, ...rest }: HeadProps) => (
   <th
     className={cn(
-      "px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted",
+      "px-3 sm:px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted whitespace-nowrap",
       "border-r border-ink/10 last:border-r-0",
       className,
     )}
@@ -50,7 +50,7 @@ export const TableHead = ({ className, ...rest }: HeadProps) => (
 export const TableCell = ({ className, ...rest }: CellProps) => (
   <td
     className={cn(
-      "px-6 py-3 align-middle text-ink",
+      "px-3 sm:px-6 py-3 align-middle text-ink",
       "border-r border-ink/10 last:border-r-0",
       className,
     )}

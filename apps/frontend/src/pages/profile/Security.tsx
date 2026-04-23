@@ -13,6 +13,13 @@ import {
   FormDescription,
 } from "@/components/ui/Form";
 import { useToast } from "@/components/ui/Toast";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+} from "@/components/ui/AlertDialog";
 
 const Security = () => {
   const { logout } = useAuth();
@@ -27,6 +34,7 @@ const Security = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [remaining, setRemaining] = useState<number | null >(null);
   const [armed, setArmed] = useState(false);
+  const [ confirmOpen, setConfirmOpen] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const handleChangePassword = async (
@@ -69,6 +77,7 @@ const Security = () => {
         err.response?.data?.error ?? "Please try again.",
       );
       setIsDeleting(false);
+      setConfirmOpen(false);
     }
   };
 
@@ -100,7 +109,7 @@ const Security = () => {
 
   const handleClick = () => {
     if (!armed) return;
-    handleDeleteAccount();
+    setConfirmOpen(true);
   };
 
   useEffect(
@@ -218,6 +227,25 @@ const Security = () => {
           </Button>
         </div>
       </Card>
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action cannot be undone. This will permanently delete your
+            account and all associated data.
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <Button variant="ghost" 
+            onClick={() => setConfirmOpen(false)}
+            disabled={isDeleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteAccount} loading={isDeleting}>
+              Delete account
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
