@@ -4,7 +4,7 @@ import { Menu, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "@/compo
 import { useAuth } from "@/hooks/useAuth";
 import { LogOut } from "lucide-react";
 
-const Header = () => {
+const ProtectedHeader = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -58,4 +58,4 @@ const Header = () => {
   );
 };
 
-export default Header;
+export default ProtectedHeader;

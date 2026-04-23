@@ -9,7 +9,7 @@ type CellProps = WithClass<React.TdHTMLAttributes<HTMLTableCellElement>>;
 type HeadProps = WithClass<React.ThHTMLAttributes<HTMLTableCellElement>>;
 
 export const Table = ({ className, ...rest }: TableProps) => (
-  <div className="w-full overflow-x-auto rounded-xl border border-ink/10 bg-white">
+  <div className="w-full overflow-x-auto rounded-xl border border-crimson border-1 bg-white">
     <table
       className={cn("w-full border-collapse text-sm", className)}
       {...rest}

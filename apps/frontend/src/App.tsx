@@ -10,7 +10,9 @@ import Security from "./pages/profile/Security";
 import Edit from "./pages/profile/Edit";
 import GuestRoute from "./components/GuestRoute";
 import ProtectedRoute from "./components/ProtectedRoute";
-import Layout from "./components/Layout";
+import ProtectedLayout from "./components/ProtectedLayout";
+import GuestLayout from "./components/GuestLayout";
+
 
 const App = () => {
   return (
@@ -19,13 +21,15 @@ const App = () => {
         <Route path="*" element={<NotFound />} />
 
         <Route element={<GuestRoute />}>
+          <Route element={<GuestLayout />}>
+            <Route path="/" element={<Landing />} />
+          </Route>
           <Route path="/login" element={<Auth />} />
           <Route path="/register" element={<Auth />} />
-          <Route path="/" element={<Landing />} />
         </Route>
 
         <Route element={<ProtectedRoute />}>
-          <Route element={<Layout />}>
+          <Route element={<ProtectedLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/shorten" element={<Shorten />} />
             <Route path="/link-created" element={<LinkCreated />} />

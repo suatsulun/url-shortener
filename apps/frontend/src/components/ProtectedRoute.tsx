@@ -1,11 +1,12 @@
 import { Outlet, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import PageSpinner from "./ui/PageSpinner";
 
 const ProtectedRoute = () => {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <PageSpinner />;
   }
 
   if (!isAuthenticated) {

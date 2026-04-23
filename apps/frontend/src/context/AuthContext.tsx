@@ -9,6 +9,7 @@ export interface AuthContextType {
   logout: () => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
   updateUser: (user: User) => void;
+  clearUser : () => void;
 }
 
 export interface User {
@@ -26,6 +27,7 @@ const AuthContext = createContext<AuthContextType>({
   logout: async () => {},
   register: async () => {},
   updateUser: () => {},
+  clearUser: () => {},
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -63,6 +65,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setUser(user);
   };
 
+  const clearUser = () => {
+    setUser(null);
+  };
+
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -85,7 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, logout, register, updateUser }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, logout, register, updateUser, clearUser }}>
       {children}
     </AuthContext.Provider>
   );

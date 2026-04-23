@@ -13,17 +13,21 @@ const Auth = () => {
       className={cn(
         "min-h-screen min-w-screen flex flex-col items-center justify-center px-4 py-10",
         "transition-colors duration-700",
-        isLogin ? "mode-login bg-white" : "mode-register bg-crimson"
-      )}>
+        isLogin ? "mode-login bg-white" : "mode-register bg-crimson",
+      )}
+    >
+      <Link className="flex flex-col items-center" to="/">
         <Logo variant={isLogin ? "red" : "white"} />
-      <div  
-      className={cn(
-        "mb-9 text-3xl font-bold tracking-tight transition-colors duration-700",
-        isLogin ? "text-crimson" : "text-white"
-      )}>
-        Suat's URL Shortener
-    </div>
-          <div className="w-full max-w-sm">
+        <div
+          className={cn(
+            "mb-9 text-3xl font-bold tracking-tight transition-colors duration-700",
+            isLogin ? "text-crimson" : "text-white",
+          )}
+        >
+          Suat's URL Shortener
+        </div>
+      </Link>
+      <div className="w-full max-w-sm">
         <div
           key={pathname}
           className={cn(
@@ -48,7 +52,9 @@ const Auth = () => {
       <div
         className={cn(
           "mt-5 w-full max-w-sm flex text-sm transition-colors duration-700",
-          isLogin ? "justify-end text-crimson-dark" : "justify-start text-white/90",
+          isLogin
+            ? "justify-end text-crimson-dark"
+            : "justify-start text-white/90",
         )}
       >
         <Link

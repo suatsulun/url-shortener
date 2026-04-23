@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
@@ -12,27 +12,28 @@ import {
   FormError,
   FormDescription,
 } from "@/components/ui/Form";
+import { useToast } from "@/components/ui/Toast";
 
 const Security = () => {
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [remaining, setRemaining] = useState<number | null >(null);
+  const [armed, setArmed] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const handleChangePassword = async (
     e: React.SubmitEvent<HTMLFormElement>,
   ) => {
     e.preventDefault();
     setErrors({});
-    setSuccessMsg(null);
 
     if (newPassword !== confirmPassword) {
       setErrors({ confirmPassword: "Passwords don't match" });
@@ -45,7 +46,7 @@ const Security = () => {
       setOldPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      setSuccessMsg("Password updated");
+      toast.success("Password updated");
     } catch (err: any) {
       setErrors({
         oldPassword: err.response?.data?.error ?? "Failed to change password",
@@ -56,30 +57,68 @@ const Security = () => {
   };
 
   const handleDeleteAccount = async () => {
-    const confirmed = window.confirm(
-      "This will permanently delete your account and all your links. This cannot be undone. Continue?",
-    );
-    if (!confirmed) return;
-
-    setDeleteError(null);
     setIsDeleting(true);
     try {
       await api.delete("/users/me");
       await logout().catch(() => {});
+      toast.success("Account deleted");
       navigate("/");
     } catch (err: any) {
-      setDeleteError(
-        err.response?.data?.error ?? "Failed to delete account",
+      toast.error(
+        "Failed to delete account",
+        err.response?.data?.error ?? "Please try again.",
       );
       setIsDeleting(false);
     }
   };
 
+  const handleMouseEnter = () => {
+    if (armed) return;
+    setRemaining(3);
+    const interval = setInterval(() => {
+      setRemaining((r) => {
+        if (r === 1) {
+          setArmed(true);
+          clearInterval(intervalRef.current!);
+          intervalRef.current = null;
+          return null;
+        }
+        return (r ? r - 1 : null);
+      });
+    }, 1000);
+    intervalRef.current = interval;
+  };
+
+  const handleMouseLeave = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    setRemaining(null);
+    setArmed(false);
+  };
+
+  const handleClick = () => {
+    if (!armed) return;
+    handleDeleteAccount();
+  };
+
+  useEffect(
+    () => () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    },
+    [],
+  );
+
   return (
     <div className="mx-auto mt-16 flex w-full max-w-xl flex-col gap-6 px-4">
-      <Card variant="elevated" padding="lg" className="flex flex-col gap-6">
+      <Card
+        variant="elevated"
+        padding="lg"
+        className="flex flex-col gap-6  border-crimson border-2"
+      >
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight text-crimson">
+          <h1 className="text-2xl font-bold tracking-tight text-crimson flex justify-center">
             Change password
           </h1>
           <p className="text-sm text-muted">
@@ -130,11 +169,7 @@ const Security = () => {
             <FormError />
           </FormField>
 
-          {successMsg && (
-            <p className="text-sm text-emerald">{successMsg}</p>
-          )}
-
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap justify-end gap-26">
             <Button type="submit" variant="primary" loading={isSubmitting}>
               Update password
             </Button>
@@ -152,30 +187,34 @@ const Security = () => {
       <Card
         variant="elevated"
         padding="lg"
-        className="flex flex-col gap-4 border border-danger/30"
+        className="flex flex-col gap-4 border bg-danger/80 text-white"
       >
         <div className="flex flex-col gap-1">
-          <h2 className="text-xl font-bold tracking-tight text-danger">
+          <h2 className="text-xl font-bold tracking-tight text-white flex justify-center">
             Danger zone
           </h2>
-          <p className="text-sm text-muted">
+          <p className="text-sm text-white">
             Deleting your account is permanent. All your short links will be
             removed.
           </p>
         </div>
 
-        {deleteError && (
-          <p className="text-sm text-red-600">{deleteError}</p>
-        )}
-
-        <div>
+        <div className="flex justify-center">
           <Button
             type="button"
-            variant="destructive"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            onClick={handleClick}
+            variant={armed ? "destructive" : "ghost"}
+            className={`min-w-35 ${!armed ? "opacity-100 border-white border-2 text-white" : ""}`}
+            aria-disabled={!armed}
             loading={isDeleting}
-            onClick={handleDeleteAccount}
           >
-            Delete account
+            {armed
+              ? "Delete account"
+              : remaining !== null
+                ? `Hold... ${remaining}`
+                : "Hover to delete"}
           </Button>
         </div>
       </Card>

@@ -33,7 +33,7 @@ const LinkCreated = () => {
     <div className="mx-auto mt-16 w-full max-w-xl px-4">
       <Card variant="elevated" padding="lg" className="flex flex-col gap-6">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight text-crimson">
+          <h1 className="text-2xl font-bold tracking-tight text-crimson flex justify-center">
             Link created
           </h1>
           <p className="text-sm text-muted">
@@ -70,7 +70,7 @@ const LinkCreated = () => {
           </a>
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-3 justify-around">
           <Button
             type="button"
             variant={copied ? "success" : "primary"}

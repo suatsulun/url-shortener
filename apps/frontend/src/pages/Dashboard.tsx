@@ -12,9 +12,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Trash2Icon, CopyIcon, CheckIcon } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
-
-
-
+import { useToast } from '@/components/ui/Toast';
 
 
 const Dashboard = () => {
@@ -24,21 +22,27 @@ const Dashboard = () => {
   const [error, setError] = useState<string | null>(null);
 
   const navigate = useNavigate();
+  const toast = useToast();
+
   const handleDelete = async (shortId: string) => {
     try {
       await api.delete(`/urls/${shortId}`);
       setUrls((prev) => prev.filter((url) => url.shortId !== shortId));
-    } catch (err) {
-      console.error('Failed to delete URL', err);
+      toast.success("Link deleted");
+    } catch (err: any) {
+      toast.error(
+        "Failed to delete URL",
+        err.response?.data?.error ?? "Please try again.",
+      );
     }
   };
 
-  const copy = async ( value: string ) => {
+  const copy = async (value: string) => {
     try {
       await navigator.clipboard.writeText(`${window.location.origin}/${value}`);
       setCopiedId(value);
-    } catch (err) {
-      console.error("Failed to copy URL", err);
+    } catch {
+      toast.error("Failed to copy URL");
     }
   };
 
@@ -48,8 +52,7 @@ const Dashboard = () => {
         setIsLoading(true);
         const response = await api.get('/urls/me');
         setUrls(response.data);
-      } catch (err) {
-        console.error('Failed to fetch URLs', err);
+      } catch {
         setError('Failed to fetch URLs');
       } finally {
         setIsLoading(false);

@@ -13,15 +13,16 @@ import {
   FormDescription,
 } from "@/components/ui/Form";
 import type { User } from "@/context/AuthContext";
+import { useToast } from "@/components/ui/Toast";
 
 const Edit = () => {
   const { user, updateUser } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [username, setUsername] = useState(user?.username ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   if (!user) {
     return null;
@@ -31,7 +32,6 @@ const Edit = () => {
 
   const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError(null);
     setIsSubmitting(true);
 
     const payload: Partial<Pick<User, "username" | "email">> = {};
@@ -41,9 +41,13 @@ const Edit = () => {
     try {
       const { data } = await api.patch<User>("/users/me", payload);
       updateUser(data);
+      toast.success("Profile updated");
       navigate("/profile");
     } catch (err: any) {
-      setError(err.response?.data?.error ?? "Failed to update profile");
+      toast.error(
+        "Failed to update profile",
+        err.response?.data?.error ?? "Please try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -51,9 +55,13 @@ const Edit = () => {
 
   return (
     <div className="mx-auto mt-16 w-full max-w-xl px-4">
-      <Card variant="elevated" padding="lg" className="flex flex-col gap-6">
+      <Card
+        variant="elevated"
+        padding="lg"
+        className="flex flex-col gap-6 border-crimson border-2"
+      >
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight text-crimson">
+          <h1 className="text-2xl font-bold tracking-tight text-crimson flex justify-center">
             Edit profile
           </h1>
           <p className="text-sm text-muted">
@@ -90,9 +98,7 @@ const Edit = () => {
             <FormError />
           </FormField>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
-
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-37 justify-end">
             <Button
               type="submit"
               variant="primary"
