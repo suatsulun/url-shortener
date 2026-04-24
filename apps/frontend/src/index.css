@@ -19,8 +19,8 @@
   --color-emerald: #10b981;
   --color-emerald-dark: #059669;
   --color-amber: #f59e0b;
-  --color-danger: #FF0000;
-  --color-danger-dark: #BF0404;
+  --color-danger: #ff0000;
+  --color-danger-dark: #bf0404;
 }
 
 @keyframes slide-in-left {

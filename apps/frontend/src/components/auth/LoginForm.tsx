@@ -61,7 +61,12 @@ const LoginForm = () => {
         <FormError />
       </FormField>
 
-      <Button type="submit" variant="secondary" loading={isSubmitting} className="mt-2">
+      <Button
+        type="submit"
+        variant="secondary"
+        loading={isSubmitting}
+        className="mt-2"
+      >
         Sign in
       </Button>
     </Form>

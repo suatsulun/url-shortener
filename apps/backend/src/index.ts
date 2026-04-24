@@ -2,7 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import { connectRedis } from "./lib/redis.js";
+import { connectRedis} from "./lib/redis.js";
 import userRouter from "./routes/users.js";
 import urlRouter from "./routes/urls.js";
 import "./jobs/flush/flushWorker.js";
@@ -11,6 +11,8 @@ import "./jobs/cleanup/cleanupWorker.js";
 import { startCleanupScheduler } from "./jobs/cleanup/cleanupQueue.js";
 import "./jobs/idGen/idGenWorker.js";
 import { startIdGenScheduler } from "./jobs/idGen/idGenQueue.js";
+import healthRouter from "./routes/health.js";
+import { globalLimiter } from "./middleware/rateLimiter.js";
 
 const app = express();
 
@@ -21,14 +23,15 @@ app.use(
   }),
 );
 
+app.set("trust proxy", 1);
+
 app.use(express.json());
 app.use(cookieParser());
+app.use(globalLimiter);
+
 app.use("/api/users", userRouter);
 app.use("/api/urls", urlRouter);
-
-app.get("/api/health", (req, res) => {
-  res.json({ status: "ok" });
-});
+app.use("/api/health", healthRouter);
 
 const start = async (): Promise<void> => {
   await connectRedis();

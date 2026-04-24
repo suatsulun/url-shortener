@@ -13,7 +13,6 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedLayout from "./components/ProtectedLayout";
 import GuestLayout from "./components/GuestLayout";
 
-
 const App = () => {
   return (
     <BrowserRouter>

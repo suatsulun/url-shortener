@@ -7,9 +7,13 @@ export interface AuthContextType {
   isLoading: boolean;
   login: (loginName: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
+  register: (
+    username: string,
+    email: string,
+    password: string,
+  ) => Promise<void>;
   updateUser: (user: User) => void;
-  clearUser : () => void;
+  clearUser: () => void;
 }
 
 export interface User {
@@ -39,28 +43,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const isAuthenticated = !!user;
 
   const login = async (loginName: string, password: string) => {
-      const response = await api.post("/users/login", { loginName, password });
-      if (response.status === 200) {
-        const data: User = response.data;
-        setUser(data);
-      }
+    const response = await api.post("/users/login", { loginName, password });
+    if (response.status === 200) {
+      const data: User = response.data;
+      setUser(data);
+    }
   };
 
   const logout = async () => {
-      const response = await api.post("/users/logout");
-      if (response.status === 200) {
-        setUser(null);
-      }
+    const response = await api.post("/users/logout");
+    if (response.status === 200) {
+      setUser(null);
+    }
   };
 
-  const register = async (username: string, email: string, password: string) => {
-      const response = await api.post("/users/register", { username, email, password });
-      if (response.status === 201) {
-        const data: User = response.data;
-        setUser(data);
-      }
+  const register = async (
+    username: string,
+    email: string,
+    password: string,
+  ) => {
+    const response = await api.post("/users/register", {
+      username,
+      email,
+      password,
+    });
+    if (response.status === 201) {
+      const data: User = response.data;
+      setUser(data);
+    }
   };
-  
+
   const updateUser = (user: User) => {
     setUser(user);
   };
@@ -74,7 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         setIsLoading(true);
         const response = await api.get("/users/me");
-       if (response.status === 200) {
+        if (response.status === 200) {
           const data: User = response.data;
           setUser(data);
         } else {
@@ -91,7 +103,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, logout, register, updateUser, clearUser }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated,
+        isLoading,
+        login,
+        logout,
+        register,
+        updateUser,
+        clearUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -1,6 +1,12 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/ui/Logo";
-import { Menu, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "@/components/ui/Menu";
+import {
+  Menu,
+  MenuTrigger,
+  MenuContent,
+  MenuItem,
+  MenuSeparator,
+} from "@/components/ui/Menu";
 import { useAuth } from "@/hooks/useAuth";
 import { LogOut } from "lucide-react";
 
@@ -17,10 +23,12 @@ const ProtectedHeader = () => {
     ? user.username.charAt(0).toUpperCase() + user.username.slice(1)
     : "";
 
-
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center justify-between gap-3 border-b border-ink/10 bg-white px-4 sm:px-6">
-      <Link to="/dashboard" className="flex items-center gap-2 sm:gap-3 min-w-0">
+      <Link
+        to="/dashboard"
+        className="flex items-center gap-2 sm:gap-3 min-w-0"
+      >
         <Logo variant="red" className="h-8 sm:h-9 shrink-0" />
         <span className="hidden sm:inline text-lg font-bold tracking-tight text-crimson truncate">
           Suat's URL Shortener

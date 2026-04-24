@@ -23,17 +23,9 @@ const cardVariants = cva("rounded-lg border border-ink/10 bg-white", {
   },
 });
 
-
 type CardProps = React.HTMLAttributes<HTMLDivElement> &
   VariantProps<typeof cardVariants>;
 
-export const Card = ({
-  className,
-  variant,
-  ...rest
-}: CardProps) => (
-    <div
-      className={cn(cardVariants({ variant }), className)}
-      {...rest}
-    />
+export const Card = ({ className, variant, ...rest }: CardProps) => (
+  <div className={cn(cardVariants({ variant }), className)} {...rest} />
 );

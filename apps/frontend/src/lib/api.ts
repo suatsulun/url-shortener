@@ -14,9 +14,9 @@ export const setOnUnauthorized = (callback: () => void) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-         if (error.response?.status === 401) {
-            onUnauthorized?.();
-        };
-      return Promise.reject(error);
+    if (error.response?.status === 401) {
+      onUnauthorized?.();
     }
-    );
+    return Promise.reject(error);
+  },
+);

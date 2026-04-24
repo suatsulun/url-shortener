@@ -6,7 +6,9 @@ type WithClass<T> = Omit<T, "className"> & { className?: string };
 export const Menu = BaseMenu.Root;
 export const MenuTrigger = BaseMenu.Trigger;
 
-type MenuContentProps = WithClass<React.ComponentProps<typeof BaseMenu.Popup>> & {
+type MenuContentProps = WithClass<
+  React.ComponentProps<typeof BaseMenu.Popup>
+> & {
   sideOffset?: number;
   align?: "start" | "center" | "end";
 };
@@ -49,7 +51,9 @@ export const MenuItem = ({ className, ...rest }: MenuItemProps) => (
   />
 );
 
-type MenuSeparatorProps = WithClass<React.ComponentProps<typeof BaseMenu.Separator>>;
+type MenuSeparatorProps = WithClass<
+  React.ComponentProps<typeof BaseMenu.Separator>
+>;
 
 export const MenuSeparator = ({ className, ...rest }: MenuSeparatorProps) => (
   <BaseMenu.Separator

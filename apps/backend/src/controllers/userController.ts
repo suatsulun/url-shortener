@@ -3,8 +3,8 @@ import * as userService from "../services/userService.js";
 import { generateToken, setAuthCookie } from "../lib/jwt.js";
 
 export const register = async (req: Request, res: Response) => {
+  const { username, email, password } = req.body;
   try {
-    const { username, email, password } = req.body;
     const user = await userService.createUser(username, email, password);
     const tokenValue = generateToken(user.id);
     setAuthCookie(res, tokenValue);
@@ -16,6 +16,7 @@ export const register = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
   const { loginName, password } = req.body;
+
   const user =
     (await userService.findUserByEmail(loginName)) ||
     (await userService.findUserByUsername(loginName));
@@ -35,11 +36,10 @@ export const login = async (req: Request, res: Response) => {
   const tokenValue = generateToken(user.id);
 
   setAuthCookie(res, tokenValue);
-  
+
   const { passwordHash: _, ...userWithoutPassword } = user;
   res.json(userWithoutPassword);
 };
-
 
 export const logout = (req: Request, res: Response) => {
   res.clearCookie("token");

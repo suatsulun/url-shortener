@@ -8,24 +8,15 @@ import {
   urlOwnershipCheck,
 } from "../services/urlService.js";
 import { cfExists, CF_KEYS } from "../lib/redis.js";
-import { z } from "zod";
 import { getOrSetCache } from "../lib/cache.js";
 import { incrementClickCount } from "../lib/redis.js";
 import { cleanupExpiredUrls } from "../services/urlService.js";
-
-const paramsSchema = z.object({
-  shortId: z.string().min(1).max(6).regex(/^[A-Za-z0-9_-]+$/),
-});
+import { shortIdParamSchema } from "../validation/urlSchemas.js";
 
 export const shortenUrl = async (req: Request, res: Response) => {
+  const { originalUrl } = req.body;
   try {
-    const { originalUrl } = req.body;
     const userId = req.userId as number;
-
-    if (!originalUrl) {
-      return res.status(404).json({ error: "URL not found" });
-    }
-
     const normalized = normalizeUrl(originalUrl);
     const urlHash = hashUrl(normalized);
 
@@ -53,12 +44,10 @@ export const getUserUrls = async (req: Request, res: Response) => {
 };
 
 export const redirectUrl = async (req: Request, res: Response) => {
-  const result = paramsSchema.safeParse(req.params);
-
-  if (!result.success) {
-    return res.redirect("/not-found");
-  }
+  const result = shortIdParamSchema.safeParse(req.params);
+  if (!result.success) return res.redirect("/not-found");
   const { shortId } = result.data;
+
   try {
     const existsInFilter = await cfExists(CF_KEYS.SHORT_IDS, shortId);
     if (!existsInFilter) {
@@ -87,7 +76,7 @@ export const redirectUrl = async (req: Request, res: Response) => {
 export const deleteUrl = async (req: Request, res: Response) => {
   try {
     const userId = req.userId as number;
-    const { shortId } = req.params as { shortId: string };
+    const shortId = req.params.shortId as string;
     const url = await findUrlByShortId(shortId);
     if (!url) {
       return res.status(404).json({ error: "URL not found" });
@@ -106,7 +95,7 @@ export const deleteUrl = async (req: Request, res: Response) => {
   }
 };
 
-export const triggerCleanup = async (req: Request, res: Response) => {
+export const triggerCleanup = async (_req: Request, res: Response) => {
   try {
     const totalCleaned = await cleanupExpiredUrls();
     return res

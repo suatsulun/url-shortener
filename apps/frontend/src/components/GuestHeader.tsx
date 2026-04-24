@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { Logo } from "./ui/Logo";
 
-
 const GuestHeader = () => {
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center justify-between gap-3 border-b border-ink/10 bg-white px-4 sm:px-6">

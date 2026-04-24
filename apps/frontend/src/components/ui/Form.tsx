@@ -12,39 +12,33 @@ type FieldCtrlProps = WithClass<React.ComponentProps<typeof Field.Control>>;
 type FieldDescProps = WithClass<React.ComponentProps<typeof Field.Description>>;
 type FieldErrorProps = WithClass<React.ComponentProps<typeof Field.Error>>;
 
-export const Form = ( { className, ...rest }: FormProps) => (
-    <BaseForm
-      className={cn("flex flex-col gap-4", className)}
-      {...rest}
-    />
+export const Form = ({ className, ...rest }: FormProps) => (
+  <BaseForm className={cn("flex flex-col gap-4", className)} {...rest} />
 );
 
 export const FormField = ({ className, ...rest }: FieldRootProps) => (
-  <Field.Root className={cn("flex flex-col gap-1.5", className)} 
-  {...rest} 
-  />
+  <Field.Root className={cn("flex flex-col gap-1.5", className)} {...rest} />
 );
 
 export const FormLabel = ({ className, ...rest }: FieldLabelProps) => (
-    <Field.Label 
+  <Field.Label
     data-slot="label"
-    className={cn("text-xs font-semibold text-muted", className)} 
-    {...rest} 
-    />
-    );
+    className={cn("text-xs font-semibold text-muted", className)}
+    {...rest}
+  />
+);
 
 export const FormControl = ({ className, ...rest }: FieldCtrlProps) => (
   <Field.Control render={<Input className={className} />} {...rest} />
 );
 
 export const FormDescription = ({ className, ...rest }: FieldDescProps) => (
-    <Field.Description className={cn("text-xs text-muted", className)} 
-    {...rest} 
-    />
+  <Field.Description
+    className={cn("text-xs text-muted", className)}
+    {...rest}
+  />
 );
 
 export const FormError = ({ className, ...rest }: FieldErrorProps) => (
-    <Field.Error className={cn("text-xs text-crimson", className)} 
-    {...rest} 
-    />
+  <Field.Error className={cn("text-xs text-crimson", className)} {...rest} />
 );

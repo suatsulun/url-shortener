@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { type Url } from '../types/url';
-import { api } from '../lib/api';
+import { useEffect, useMemo, useRef, useState } from "react";
+import { type Url } from "../types/url";
+import { api } from "../lib/api";
 import {
   Table,
   TableHeader,
@@ -9,12 +9,18 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/Table";
-import { Button } from '@/components/ui/Button';
-import { Trash2Icon, CopyIcon, CheckIcon, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/components/ui/Toast';
-import { Input } from '@/components/ui/Input';
-
+import { Button } from "@/components/ui/Button";
+import {
+  Trash2Icon,
+  CopyIcon,
+  CheckIcon,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/components/ui/Toast";
+import { Input } from "@/components/ui/Input";
 
 const Dashboard = () => {
   const [urls, setUrls] = useState<Url[]>([]);
@@ -25,15 +31,18 @@ const Dashboard = () => {
   const [sort, setSort] = useState({ field: "createdAt", direction: "desc" });
   const [visibleCount, setVisibleCount] = useState(20);
 
-  type PendingDelete = { url: Url; index: number; timeoutId: ReturnType<typeof setTimeout> };
+  type PendingDelete = {
+    url: Url;
+    index: number;
+    timeoutId: ReturnType<typeof setTimeout>;
+  };
 
   const pendingDeletes = useRef<Map<string, PendingDelete>>(new Map());
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-
   const navigate = useNavigate();
   const toast = useToast();
-  
+
   const filteredUrls = useMemo(() => {
     const direction = sort.direction === "asc" ? 1 : -1;
 
@@ -75,12 +84,13 @@ const Dashboard = () => {
     const url = urls[index];
     setUrls((prev) => prev.filter((u) => u.shortId !== shortId));
 
-    const timeoutId = setTimeout( async () => {
+    const timeoutId = setTimeout(async () => {
       try {
         await api.delete(`/urls/${shortId}`);
       } catch (err: any) {
-        toast.error("Failed to delete URL",
-           err.response?.data?.error ?? "Please try again.",
+        toast.error(
+          "Failed to delete URL",
+          err.response?.data?.error ?? "Please try again.",
         );
         setUrls((prev) => {
           const next = [...prev];
@@ -92,20 +102,19 @@ const Dashboard = () => {
       }
     }, 5000);
 
-     pendingDeletes.current.set(shortId, { url, index, timeoutId });
-     
-      toast.undoable("Link deleted", () => {
-        const entry = pendingDeletes.current.get(shortId);
-        if (!entry) return;
-        clearTimeout(entry.timeoutId);
-        pendingDeletes.current.delete(shortId);
-        setUrls((prev) => {
-          const next = [...prev];
-          next.splice(entry.index, 0, entry.url);
-          return next;
-        });
-      });
+    pendingDeletes.current.set(shortId, { url, index, timeoutId });
 
+    toast.undoable("Link deleted", () => {
+      const entry = pendingDeletes.current.get(shortId);
+      if (!entry) return;
+      clearTimeout(entry.timeoutId);
+      pendingDeletes.current.delete(shortId);
+      setUrls((prev) => {
+        const next = [...prev];
+        next.splice(entry.index, 0, entry.url);
+        return next;
+      });
+    });
   };
 
   const handleSortClick = (field: string) => {
@@ -116,7 +125,8 @@ const Dashboard = () => {
       }));
     } else {
       setSort({ field, direction: "asc" });
-    }};
+    }
+  };
 
   const copy = async (value: string) => {
     try {
@@ -131,10 +141,10 @@ const Dashboard = () => {
     const fetchUrls = async () => {
       try {
         setIsLoading(true);
-        const response = await api.get('/urls/me');
+        const response = await api.get("/urls/me");
         setUrls(response.data);
       } catch {
-        setError('Failed to fetch URLs');
+        setError("Failed to fetch URLs");
       } finally {
         setIsLoading(false);
       }
@@ -145,7 +155,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     return () => {
-      pendingDeletes.current.forEach(({timeoutId, url}) => {
+      pendingDeletes.current.forEach(({ timeoutId, url }) => {
         clearTimeout(timeoutId);
         api.delete(`/urls/${url.shortId}`).catch(() => {});
       });
@@ -156,22 +166,19 @@ const Dashboard = () => {
     setVisibleCount(20);
   }, [query, sort]);
 
-useEffect(() => {
-  const node = sentinelRef.current;
-  if (!node) return;
-  if (visibleCount >= filteredUrls.length) return;
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node) return;
+    if (visibleCount >= filteredUrls.length) return;
 
-  const observer = new IntersectionObserver((entries) => {
-    if (entries[0].isIntersecting) {
-      setVisibleCount((v) => v + 20);
-    }
-  });
-  observer.observe(node);
-  return () => observer.disconnect();
-}, [filteredUrls.length, visibleCount]);
-
-
-
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        setVisibleCount((v) => v + 20);
+      }
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [filteredUrls.length, visibleCount]);
 
   return (
     <div className="mx-auto max-w-7xl p-4 sm:p-6">

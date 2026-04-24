@@ -24,13 +24,6 @@ const inputVariants = cva(
 type InputProps = InputHTMLAttributes<HTMLInputElement> &
   VariantProps<typeof inputVariants>;
 
-export const Input = ({
-  className,
-  variant,
-  ...rest
-}: InputProps) => (
-    <input
-      className={cn(inputVariants({ variant }), className)}
-      {...rest}
-    />
+export const Input = ({ className, variant, ...rest }: InputProps) => (
+  <input className={cn(inputVariants({ variant }), className)} {...rest} />
 );

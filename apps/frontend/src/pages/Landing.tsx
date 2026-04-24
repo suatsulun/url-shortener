@@ -103,8 +103,7 @@ const Landing = () => {
             Ready to shorten?
           </h2>
           <p className="text-sm text-muted">
-            Create an account and share your first short link in under a
-            minute.
+            Create an account and share your first short link in under a minute.
           </p>
           <Button
             type="button"

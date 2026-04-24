@@ -99,7 +99,9 @@ const RegisterForm = () => {
           minLength={8}
           pattern="(?=.*[A-Za-z])(?=.*\d).{8,}"
         />
-        <FormDescription>At least 8 characters, 1 letter + 1 number</FormDescription>
+        <FormDescription>
+          At least 8 characters, 1 letter + 1 number
+        </FormDescription>
         <FormError />
       </FormField>
 

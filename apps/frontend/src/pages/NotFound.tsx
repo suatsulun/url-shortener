@@ -15,9 +15,7 @@ const NotFound = () => {
         className="flex flex-col items-center gap-6 text-center"
       >
         <div className="flex flex-col gap-2">
-          <span className="font-mono text-5xl font-bold text-crimson">
-            404
-          </span>
+          <span className="font-mono text-5xl font-bold text-crimson">404</span>
           <h1 className="text-2xl font-bold tracking-tight text-ink">
             Page not found
           </h1>

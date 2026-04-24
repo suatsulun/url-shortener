@@ -36,7 +36,11 @@ const Shorten = () => {
 
   return (
     <div className="mx-auto mt-16 w-full max-w-xl px-4">
-      <Card variant="elevated" padding="lg" className="flex flex-col gap-6  border-crimson border-2">
+      <Card
+        variant="elevated"
+        padding="lg"
+        className="flex flex-col gap-6  border-crimson border-2"
+      >
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold tracking-tight text-crimson items-center justify-center flex">
             Shorten a URL

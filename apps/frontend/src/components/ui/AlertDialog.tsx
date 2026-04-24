@@ -43,10 +43,7 @@ export const AlertDialogTitle = ({
   ...rest
 }: WithClass<React.ComponentProps<typeof BaseAlertDialog.Title>>) => (
   <BaseAlertDialog.Title
-    className={cn(
-      "text-xl font-bold tracking-tight text-ink",
-      className,
-    )}
+    className={cn("text-xl font-bold tracking-tight text-ink", className)}
     {...rest}
   />
 );

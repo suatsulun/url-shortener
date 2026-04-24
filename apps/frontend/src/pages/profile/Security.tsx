@@ -32,9 +32,9 @@ const Security = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [remaining, setRemaining] = useState<number | null >(null);
+  const [remaining, setRemaining] = useState<number | null>(null);
   const [armed, setArmed] = useState(false);
-  const [ confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const handleChangePassword = async (
@@ -92,7 +92,7 @@ const Security = () => {
           intervalRef.current = null;
           return null;
         }
-        return (r ? r - 1 : null);
+        return r ? r - 1 : null;
       });
     }, 1000);
     intervalRef.current = interval;
@@ -235,12 +235,18 @@ const Security = () => {
             account and all associated data.
           </AlertDialogDescription>
           <AlertDialogFooter>
-            <Button variant="ghost" 
-            onClick={() => setConfirmOpen(false)}
-            disabled={isDeleting}>
+            <Button
+              variant="ghost"
+              onClick={() => setConfirmOpen(false)}
+              disabled={isDeleting}
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDeleteAccount} loading={isDeleting}>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAccount}
+              loading={isDeleting}
+            >
               Delete account
             </Button>
           </AlertDialogFooter>
