@@ -1,23 +1,22 @@
 import { Worker } from "bullmq";
 import { cleanupExpiredUrls } from "../../services/urlService.js";
 import { bullmqConnection } from "../bullmqConnection.js";
+import { logger } from "../../lib/logger.js";
 
 export const cleanupWorker = new Worker(
   "url-cleanup",
-  async (job) => {
-    console.log("Cleaning up expired URLs...");
+  async () => {
+    logger.info("Cleaning up expired URLs");
     const cleaned = await cleanupExpiredUrls();
-    console.log(
-      `Cleaning completed at ${new Date().toISOString()}.${cleaned} URLs removed`,
-    );
+    logger.info({ cleaned }, "Cleanup completed");
   },
   { connection: bullmqConnection, concurrency: 1 },
 );
 
 cleanupWorker.on("failed", (job, err) => {
-  console.error(`Cleanup job failed: `, err.message);
+  logger.error({ err, jobId: job?.id }, "Cleanup job failed");
 });
 
 cleanupWorker.on("error", (err) => {
-  console.error("Cleanup worker error:", err);
+  logger.error({ err }, "Cleanup worker error");
 });

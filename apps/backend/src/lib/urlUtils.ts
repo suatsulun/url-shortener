@@ -11,8 +11,8 @@ export const normalizeUrl = (rawUrl: string): string => {
     urlObj.hostname = urlObj.hostname.toLowerCase();
     urlObj.searchParams.sort();
     return urlObj.toString().replace(/\/$/, "");
-  } catch (error) {
-    throw new Error("Invalid URL");
+  } catch (cause) {
+    throw new Error("Invalid URL", { cause });
   }
 };
 

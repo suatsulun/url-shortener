@@ -154,8 +154,9 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
+    const map = pendingDeletes.current;
     return () => {
-      pendingDeletes.current.forEach(({ timeoutId, url }) => {
+      map.forEach(({ timeoutId, url }) => {
         clearTimeout(timeoutId);
         api.delete(`/urls/${url.shortId}`).catch(() => {});
       });

@@ -1,4 +1,5 @@
 import { redis } from "./redis.js";
+import { logger } from "./logger.js";
 
 export const getOrSetCache = async (
   key: string,
@@ -10,12 +11,12 @@ export const getOrSetCache = async (
     if (cachedValue) {
       return cachedValue;
     }
-    console.log("CACHE MISS:", key);
+    logger.debug({ key }, "Cache miss");
     const freshValue = await fetchFunction();
     await redis.setEx(key, ttlSeconds, freshValue);
     return freshValue;
-  } catch (error) {
-    console.error("Cache error:", error);
+  } catch (err) {
+    logger.error({ err, key }, "Cache error");
     return await fetchFunction();
   }
 };

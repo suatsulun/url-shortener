@@ -5,6 +5,7 @@ import { userUrls } from "../db/schema/userUrls.js";
 import { redis, cfAdd, cfExists, cfDel, CF_KEYS } from "../lib/redis.js";
 import { nanoid } from "nanoid";
 import { sql } from "drizzle-orm";
+import { logger } from "../lib/logger.js";
 
 const generateShortId = (): string => nanoid(6);
 
@@ -68,8 +69,11 @@ export const createUrl = async (
       try {
         const pooledId = await redis.lPop("shortIdPool");
         shortId = pooledId || generateShortId();
-      } catch (error) {
-        console.warn("Redis Pool empty, back to nanoid generation");
+      } catch (err) {
+        logger.warn(
+          { err },
+          "Redis pool empty, falling back to nanoid generation",
+        );
         shortId = generateShortId();
       }
 
@@ -89,14 +93,14 @@ export const createUrl = async (
       try {
         await cfAdd(CF_KEYS.SHORT_IDS, newUrl.shortId);
         await cfAdd(CF_KEYS.URL_HASHES, newUrl.urlHash);
-      } catch (error) {
-        console.error("Error adding to Redis Cuckoo Filter:", error);
+      } catch (err) {
+        logger.error({ err }, "Error adding to Redis Cuckoo Filter");
       }
       return newUrl.shortId;
     });
-  } catch (error) {
-    console.error("Error creating URL:", error);
-    throw new Error("Failed to create short URL");
+  } catch (err) {
+    logger.error({ err }, "Error creating URL");
+    throw new Error("Failed to create short URL", { cause: err });
   }
 };
 
@@ -158,18 +162,15 @@ export const removeUrlOwnership = async (userId: number, urlId: number) => {
             await cfDel(CF_KEYS.SHORT_IDS, deletedUrl.shortId);
             await cfDel(CF_KEYS.URL_HASHES, deletedUrl.urlHash);
             await redis.rPush("shortIdPool", deletedUrl.shortId);
-          } catch (redisError) {
-            console.error(
-              "Cleanup Redis failed after URL deletion:",
-              redisError,
-            );
+          } catch (err) {
+            logger.error({ err }, "Cleanup Redis failed after URL deletion");
           }
         }
       }
     });
-  } catch (error) {
-    console.error("Error removing URL ownership:", error);
-    throw new Error("Could not remove URL. Please try again.");
+  } catch (err) {
+    logger.error({ err }, "Error removing URL ownership");
+    throw new Error("Could not remove URL. Please try again.", { cause: err });
   }
 };
 
@@ -197,8 +198,11 @@ export const cleanupExpiredUrls = async (): Promise<number> => {
         await redis.del(url.shortId);
         await redis.rPush("shortIdPool", url.shortId);
         totalCleaned++;
-      } catch (error) {
-        console.error("Error cleaning up expired URL ${url.shortId}:", error);
+      } catch (err) {
+        logger.error(
+          { err, shortId: url.shortId },
+          "Error cleaning up expired URL",
+        );
       }
     }
     if (expiredUrls.length < 100) {

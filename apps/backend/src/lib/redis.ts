@@ -1,6 +1,5 @@
-import { createClient, RedisClientType } from "redis";
-
-let redisClient: RedisClientType;
+import { createClient } from "redis";
+import { logger } from "./logger.js";
 
 const REDIS_URL = process.env.REDIS_URL;
 
@@ -19,7 +18,7 @@ const CF = {
   DEL: "CF.DEL",
 };
 
-redisClient = createClient({
+const redisClient = createClient({
   url: REDIS_URL,
   socket: {
     reconnectStrategy: (retries) => {
@@ -29,13 +28,11 @@ redisClient = createClient({
   },
 });
 
-redisClient.on("error", (err) => console.error("Redis Client Error:", err));
-redisClient.on("connect", () => console.log("Redis Client Connecting..."));
-redisClient.on("ready", () => console.log("Redis Client Ready"));
-redisClient.on("reconnecting", () =>
-  console.log("Redis Client Reconnecting..."),
-);
-redisClient.on("end", () => console.log("Redis Client Disconnected"));
+redisClient.on("error", (err) => logger.error({ err }, "Redis client error"));
+redisClient.on("connect", () => logger.info("Redis client connecting"));
+redisClient.on("ready", () => logger.info("Redis client ready"));
+redisClient.on("reconnecting", () => logger.warn("Redis client reconnecting"));
+redisClient.on("end", () => logger.info("Redis client disconnected"));
 
 export const connectRedis = async (): Promise<void> => {
   if (!redisClient.isOpen) {

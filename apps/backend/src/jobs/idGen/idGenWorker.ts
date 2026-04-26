@@ -2,6 +2,7 @@ import { Worker } from "bullmq";
 import { bullmqConnection } from "../bullmqConnection.js";
 import { redis, cfExists, CF_KEYS } from "../../lib/redis.js";
 import { nanoid } from "nanoid";
+import { logger } from "../../lib/logger.js";
 
 const POOL_KEY = "shortIdPool";
 const TARGET_SIZE = 1000;
@@ -21,20 +22,18 @@ const generateAndFilterIds = async (needed: number): Promise<string[]> => {
 
 export const idGenWorker = new Worker(
   "id-gen",
-  async (job) => {
+  async () => {
     const currentSize = await redis.lLen(POOL_KEY);
 
     if (currentSize >= THRESHOLD) {
-      process.stdout.write(
-        `\r[ID Gen] Pool is healthy with ${currentSize} items.`,
-      );
+      logger.debug({ poolSize: currentSize }, "ID pool healthy");
       return;
     }
     const needed = TARGET_SIZE - currentSize;
     const validIds = await generateAndFilterIds(needed);
     if (validIds.length > 0) {
       await redis.rPush(POOL_KEY, validIds);
-      console.log(`[ID Gen] Pool refilled with ${validIds.length} IDs.`);
+      logger.info({ added: validIds.length }, "ID pool refilled");
     }
   },
   {
@@ -44,9 +43,9 @@ export const idGenWorker = new Worker(
 );
 
 idGenWorker.on("failed", (job, err) => {
-  console.error(`ID gen job failed:`, err.message);
+  logger.error({ err, jobId: job?.id }, "ID gen job failed");
 });
 
 idGenWorker.on("error", (err) => {
-  console.error(`ID gen worker error:`, err);
+  logger.error({ err }, "ID gen worker error");
 });

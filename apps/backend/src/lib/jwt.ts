@@ -10,7 +10,7 @@ export const verifyToken = (token: string): number | null => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
     return decoded.userId;
-  } catch (err) {
+  } catch {
     return null;
   }
 };

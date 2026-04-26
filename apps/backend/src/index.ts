@@ -2,7 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import { connectRedis} from "./lib/redis.js";
+import { connectRedis } from "./lib/redis.js";
 import userRouter from "./routes/users.js";
 import urlRouter from "./routes/urls.js";
 import "./jobs/flush/flushWorker.js";
@@ -13,8 +13,24 @@ import "./jobs/idGen/idGenWorker.js";
 import { startIdGenScheduler } from "./jobs/idGen/idGenQueue.js";
 import healthRouter from "./routes/health.js";
 import { globalLimiter } from "./middleware/rateLimiter.js";
+import { pinoHttp } from "pino-http";
+import { logger } from "./lib/logger.js";
 
 const app = express();
+
+app.use(
+  pinoHttp({
+    logger,
+    autoLogging: {
+      ignore: (req: any) => req.url === "/api/health",
+    },
+    customLogLevel: (_req: any, res: any, err: any) => {
+      if (err || res.statusCode >= 500) return "error";
+      if (res.statusCode >= 400) return "warn";
+      return "info";
+    },
+  }),
+);
 
 app.use(
   cors({
@@ -40,7 +56,7 @@ const start = async (): Promise<void> => {
   await startIdGenScheduler();
   const PORT = process.env.PORT ?? 3001;
   app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    logger.info({ port: PORT }, "Server is running");
   });
 };
 

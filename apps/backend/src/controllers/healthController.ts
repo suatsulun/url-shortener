@@ -15,7 +15,7 @@ const probeDatabase = async () => {
       ),
     ]);
     return "ok";
-  } catch (error) {
+  } catch {
     return "error";
   }
 };
@@ -29,7 +29,7 @@ const probeRedis = async () => {
       ),
     ]);
     return "ok";
-  } catch (error) {
+  } catch {
     return "error";
   }
 };

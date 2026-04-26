@@ -2,10 +2,11 @@ import { Worker } from "bullmq";
 import { bullmqConnection } from "../bullmqConnection.js";
 import { bulkUpdateClicks } from "../../services/urlService.js";
 import { redis } from "../../lib/redis.js";
+import { logger } from "../../lib/logger.js";
 
 export const flushWorker = new Worker(
   "flush-clicks",
-  async (job) => {
+  async () => {
     try {
       const clicksData = await redis.hGetAll("clicks");
       const clicks: Record<string, number> = {};
@@ -14,8 +15,8 @@ export const flushWorker = new Worker(
       }
       await bulkUpdateClicks(clicks);
       await redis.del("clicks");
-    } catch (error) {
-      console.error("Error flushing clicks:", error);
+    } catch (err) {
+      logger.error({ err }, "Error flushing clicks");
     }
   },
   {
@@ -27,14 +28,14 @@ export const startFlushWorker = async (): Promise<void> => {
   await flushWorker.run();
 };
 
-flushWorker.on("completed", (job) => {
-  console.log(`Flush completed at ${new Date().toLocaleTimeString()}`);
+flushWorker.on("completed", () => {
+  logger.info("Flush completed");
 });
 
-flushWorker.on("failed", (jobId, err) => {
-  console.error(`Flush job ${jobId} failed with error:`, err);
+flushWorker.on("failed", (job, err) => {
+  logger.error({ err, jobId: job?.id }, "Flush job failed");
 });
 
 flushWorker.on("error", (err) => {
-  console.error("Flush worker error:", err);
+  logger.error({ err }, "Flush worker error");
 });

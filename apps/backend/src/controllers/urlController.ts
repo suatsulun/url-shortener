@@ -37,8 +37,8 @@ export const getUserUrls = async (req: Request, res: Response) => {
     const userId = req.userId as number;
     const urls = await findUrlsByUserId(userId);
     return res.status(200).json(urls);
-  } catch (error) {
-    console.error("Error fetching user URLs:", error);
+  } catch (err) {
+    req.log.error({ err }, "Error fetching user URLs");
     return res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -62,13 +62,13 @@ export const redirectUrl = async (req: Request, res: Response) => {
     });
     res.redirect(urlEntry);
     incrementClickCount(shortId).catch((err) =>
-      console.error("Failed to increment click count:", err),
+      req.log.error({ err, shortId }, "Failed to increment click count"),
     );
-  } catch (error: any) {
-    if (error?.message === "URL not found") {
+  } catch (err: any) {
+    if (err?.message === "URL not found") {
       return res.redirect("/not-found");
     }
-    console.error("Redirect error:", error);
+    req.log.error({ err, shortId }, "Redirect error");
     return res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -89,20 +89,20 @@ export const deleteUrl = async (req: Request, res: Response) => {
     }
     await removeUrlOwnership(userId, url.id);
     return res.status(204).send();
-  } catch (error) {
-    console.error("Deletion error:", error);
+  } catch (err) {
+    req.log.error({ err }, "Deletion error");
     return res.status(500).json({ error: "Internal server error" });
   }
 };
 
-export const triggerCleanup = async (_req: Request, res: Response) => {
+export const triggerCleanup = async (req: Request, res: Response) => {
   try {
     const totalCleaned = await cleanupExpiredUrls();
     return res
       .status(200)
       .json({ message: `Cleanup complete. ${totalCleaned} URLs cleaned.` });
-  } catch (error) {
-    console.error("Cleanup error:", error);
+  } catch (err) {
+    req.log.error({ err }, "Cleanup error");
     return res.status(500).json({ error: "Internal server error" });
   }
 };
