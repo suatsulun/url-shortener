@@ -22,10 +22,10 @@
   },
   "lint-staged": {
     "apps/backend/**/*.{ts,tsx,js,json,md}": [
-      "prettier --write"
+      "npx prettier --write"
     ],
     "apps/frontend/**/*.{ts,tsx,js,json,md}": [
-      "prettier --write",
+      "npx prettier --write",
       "bash -c 'cd apps/frontend && npx eslint --fix'"
     ]
   }
