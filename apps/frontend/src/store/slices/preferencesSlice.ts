@@ -1,8 +1,8 @@
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 
-type SortField = "shortId" | "clicks" | "createdAt" | "expiresAt";
-type SortDirection = "asc" | "desc";
+export type SortField = "shortId" | "clicks" | "createdAt" | "expiresAt";
+export type SortDirection = "asc" | "desc";
 
 type PreferencesState = {
   dashboardSort: { field: SortField; direction: SortDirection };

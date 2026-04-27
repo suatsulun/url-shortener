@@ -26,8 +26,17 @@ const recentsSlice = createSlice({
     clearRecents: (state) => {
       state.items = [];
     },
+    removeRecent: (state, action: PayloadAction<string>) => {
+      state.items = state.items.filter(
+        (item) => item.shortId !== action.payload,
+      );
+    },
+    restoreRecents: (state, action: PayloadAction<RecentLink[]>) => {
+      state.items = action.payload;
+    },
   },
 });
 
-export const { addRecent, clearRecents } = recentsSlice.actions;
+export const { addRecent, clearRecents, removeRecent, restoreRecents } =
+  recentsSlice.actions;
 export default recentsSlice.reducer;

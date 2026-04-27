@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { type Url } from "../types/url";
-import { api } from "../lib/api";
 import {
   Table,
   TableHeader,
@@ -21,27 +20,53 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/Toast";
 import { Input } from "@/components/ui/Input";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+} from "@/components/ui/AlertDialog";
+import {
+  setDashboardSort,
+  type SortField,
+} from "@/store/slices/preferencesSlice";
+import { useAppDispatch, useAppSelector } from "@/store";
+import { type FetchBaseQueryError } from "@reduxjs/toolkit/query";
+import { type SerializedError } from "@reduxjs/toolkit";
+import { useDeleteUrlMutation, useGetMyUrlsQuery } from "@/store/api/urlsApi";
+import { removeRecent } from "@/store/slices/recentsSlice";
 
 const Dashboard = () => {
-  const [urls, setUrls] = useState<Url[]>([]);
+  const { data: urls = [], isLoading, error } = useGetMyUrlsQuery();
+  const [deleteUrlMutation, { isLoading: isDeleting }] = useDeleteUrlMutation();
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const sort = useAppSelector((s) => s.preferences.dashboardSort);
+  const dispatch = useAppDispatch();
+
   const [query, setQuery] = useState("");
-  const [sort, setSort] = useState({ field: "createdAt", direction: "desc" });
   const [visibleCount, setVisibleCount] = useState(20);
+  const filterKey = `${query}|${sort.field}|${sort.direction}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
 
-  type PendingDelete = {
-    url: Url;
-    index: number;
-    timeoutId: ReturnType<typeof setTimeout>;
-  };
-
-  const pendingDeletes = useRef<Map<string, PendingDelete>>(new Map());
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const navigate = useNavigate();
   const toast = useToast();
+
+  const getErrorMessage = (
+    error: FetchBaseQueryError | SerializedError | undefined,
+  ): string => {
+    if (!error) return "";
+
+    if ("status" in error) {
+      const data = error.data as any;
+      return data?.message || data?.error || `API Error: ${error.status}`;
+    } else {
+      return error.message || "An unexpected error occurred";
+    }
+  };
 
   const filteredUrls = useMemo(() => {
     const direction = sort.direction === "asc" ? 1 : -1;
@@ -77,54 +102,34 @@ const Dashboard = () => {
 
   const visibleUrls = filteredUrls.slice(0, visibleCount);
 
-  const handleDelete = (shortId: string) => {
-    const index = urls.findIndex((u) => u.shortId === shortId);
-    if (index === -1) return;
+  const confirmDeleteUrl = urls.find((u) => u.shortId === confirmDeleteId);
 
-    const url = urls[index];
-    setUrls((prev) => prev.filter((u) => u.shortId !== shortId));
-
-    const timeoutId = setTimeout(async () => {
-      try {
-        await api.delete(`/urls/${shortId}`);
-      } catch (err: any) {
-        toast.error(
-          "Failed to delete URL",
-          err.response?.data?.error ?? "Please try again.",
-        );
-        setUrls((prev) => {
-          const next = [...prev];
-          next.splice(index, 0, url);
-          return next;
-        });
-      } finally {
-        pendingDeletes.current.delete(shortId);
-      }
-    }, 5000);
-
-    pendingDeletes.current.set(shortId, { url, index, timeoutId });
-
-    toast.undoable("Link deleted", () => {
-      const entry = pendingDeletes.current.get(shortId);
-      if (!entry) return;
-      clearTimeout(entry.timeoutId);
-      pendingDeletes.current.delete(shortId);
-      setUrls((prev) => {
-        const next = [...prev];
-        next.splice(entry.index, 0, entry.url);
-        return next;
-      });
-    });
+  const handleConfirmDelete = async () => {
+    if (!confirmDeleteId) return;
+    try {
+      await deleteUrlMutation(confirmDeleteId).unwrap();
+      dispatch(removeRecent(confirmDeleteId));
+      toast.success("Link deleted");
+      setConfirmDeleteId(null);
+    } catch (err: any) {
+      toast.error(
+        "Failed to delete URL",
+        err?.data?.error ?? "Please try again.",
+      );
+      setConfirmDeleteId(null);
+    }
   };
 
-  const handleSortClick = (field: string) => {
+  const handleSortClick = (field: SortField) => {
     if (sort.field === field) {
-      setSort((prev) => ({
-        field,
-        direction: prev.direction === "asc" ? "desc" : "asc",
-      }));
+      dispatch(
+        setDashboardSort({
+          field,
+          direction: sort.direction === "asc" ? "desc" : "asc",
+        }),
+      );
     } else {
-      setSort({ field, direction: "asc" });
+      dispatch(setDashboardSort({ field, direction: "asc" }));
     }
   };
 
@@ -137,35 +142,10 @@ const Dashboard = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchUrls = async () => {
-      try {
-        setIsLoading(true);
-        const response = await api.get("/urls/me");
-        setUrls(response.data);
-      } catch {
-        setError("Failed to fetch URLs");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchUrls();
-  }, []);
-
-  useEffect(() => {
-    const map = pendingDeletes.current;
-    return () => {
-      map.forEach(({ timeoutId, url }) => {
-        clearTimeout(timeoutId);
-        api.delete(`/urls/${url.shortId}`).catch(() => {});
-      });
-    };
-  }, []);
-
-  useEffect(() => {
+  if (prevFilterKey !== filterKey) {
+    setPrevFilterKey(filterKey);
     setVisibleCount(20);
-  }, [query, sort]);
+  }
 
   useEffect(() => {
     const node = sentinelRef.current;
@@ -195,7 +175,7 @@ const Dashboard = () => {
         </div>
       ) : error ? (
         <div className="flex flex-col items-center gap-4 py-16 text-muted">
-          <p className="text-red-500">{error}</p>
+          <p className="text-red-500">{getErrorMessage(error)}</p>
         </div>
       ) : urls.length === 0 ? (
         <div className="flex flex-col items-center gap-4 py-16 text-muted">
@@ -307,7 +287,7 @@ const Dashboard = () => {
                 <TableCell className="text-center">
                   <Button
                     variant="destructive"
-                    onClick={() => handleDelete(url.shortId)}
+                    onClick={() => setConfirmDeleteId(url.shortId)}
                     className="px-2 md:px-4"
                     aria-label="Delete"
                   >
@@ -321,6 +301,52 @@ const Dashboard = () => {
         </Table>
       )}
       <div ref={sentinelRef} className="h-1" />
+
+      <AlertDialog
+        open={confirmDeleteId !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirmDeleteId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogTitle>Delete this link?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will permanently delete{" "}
+            <code className="font-mono text-crimson">/{confirmDeleteId}</code>
+            {confirmDeleteUrl ? (
+              <>
+                {" "}
+                pointing to{" "}
+                <span className="break-all text-ink">
+                  {confirmDeleteUrl.originalUrl}
+                </span>
+                .
+              </>
+            ) : (
+              "."
+            )}{" "}
+            This action cannot be undone.
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setConfirmDeleteId(null)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              loading={isDeleting}
+            >
+              Yes, delete
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
