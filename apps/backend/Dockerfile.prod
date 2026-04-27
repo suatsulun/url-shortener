@@ -14,11 +14,13 @@ ENV NODE_ENV=production
 
 # Install all deps (drizzle-kit is needed for `npm run db:migrate`)
 COPY package*.json ./
-RUN npm ci && npm cache clean --force
+RUN npm ci --include=dev && npm cache clean --force
+ENV NODE_ENV=production
 
 # Copy built JS + the migrations folder for drizzle-kit
 COPY --from=build /app/dist ./dist
 COPY src/db/migrations ./src/db/migrations
+COPY src/db/schema ./src/db/schema 
 COPY src/drizzle.config.ts ./src/drizzle.config.ts
 
 # Run as non-root
