@@ -1,6 +1,6 @@
 <div align="center">
 
-# Snip
+# Suat's URL Shortener
 
 **A self-hosted URL shortener engineered for speed, durability, and zero-cost negative lookups.**
 
