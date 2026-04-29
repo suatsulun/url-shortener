@@ -22,7 +22,7 @@
 - [Feature highlights](#feature-highlights)
 - [Tech stack](#tech-stack)
 - [Architecture](#architecture)
-- [How it works?](#how-it-works)
+- [How does it works?](#how-does-it-works)
 - [Repository layout](#repository-layout)
 - [Quick start](#quick-start)
 - [Available scripts](#available-scripts)
@@ -33,27 +33,27 @@
 
 ## The Project
 
-This URL shortener was written by me to both to have it as a big project for my portfolio and to learn how to use some of the tools I wanted to work with. Even though it won't see thousands of users I wanted to build it to withstand tens of thousands of requests per second. So I used some tools that weren't necessary to optimize the performance and I also used some tools that would drop the performance just because I wanted to experiment with them.
+This URL shortener was written by me to both have it as a big project for my portfolio and learn how to use some of the tools I wanted to work with. Even though it won't see thousands of users I wanted to build it to withstand tens of thousands of requests per second. So I used some tools that weren't necessary to optimize the performance and I also used some tools that would drop the performance just because I wanted to experiment with them.
 
-In this repo there is a full-stack, self-hostable URL shortener uses React+Typescript for the frontend, Express for the backend, Postgres for the database and Redis for the cache. They all run on a docker container.
+In this repo there is a full-stack, self-hostable URL shortener that uses React+TypeScript for the frontend, Express for the backend, Postgres for the database and Redis for the cache. They all run on a docker container.
 
-There is a dashboard where you can see all your shortened urls, click counts and their expiration dates. In the API when a URL is sent by the user, the API normalizes it (adding https:// if missing, lowercasing the protocol+hostname, ordering the params, and deleting the ending "/"), hashes it, gets a shortId from the Redis pool (creates a shortId with nanoid(6) if there are none), stores it in the database and links the user id to the url id after. 
+There is a dashboard where you can see all your shortened urls, click counts and their expiration dates. In the API, when a URL is sent by the user, the API normalizes it (adding https:// if missing, lowercasing the protocol+hostname, ordering the params, and deleting the ending "/"), hashes it, gets a shortId from the Redis pool (creates a shortId with nanoid(6) if there are none), stores it in the database and links the user id to the url id after. 
 
-You can see a running version of this project in [https://suatsulun.com](https://suatsulun.com)
+You can see a running version of this project at [https://suatsulun.com](https://suatsulun.com)
 
 ---
 
 ## Feature highlights
 
-- **Sub-millisecond 404 path.** Since there is a Cuckoo Filter in Redis if the shortId doesnt exist there you get a 404 lightning fast.
+- **Sub-millisecond 404 path.** Since there is a Cuckoo Filter in Redis, if the shortId doesn't exist there you get a 404 lightning fast.
 - **Pre-generated ID pool.** A background worker keeps 1,000 shortIds warm in a Redis list and tops it to 1000 if they get below a certain number.
-- **Duplicate URL deduplication.** URLs get normalized first. If the normalized URL exists on the database the user who added it again is just added to a joined database that holds the URL-Owner relationships.
+- **Duplicate URL deduplication.** URLs get normalized first. If the normalized URL exists on the database the user who added it again is just added to a join database that holds the URL-Owner relationships.
 - **Async click counting.** Each redirect sends an incrementation to the Redis connected to the shortId, and a worker checks those incrementations and add them in one minute batches to the database.
 - **Sliding 30-day TTL.** URLs expire 30 days after last access. A daily worker checks the expiration dates everyday at 3:00 AM and deletes the ones that are expired.
 - **Cookie-based JWT auth.** Authentication is checked via an HTTP-only cookie.
 - **Rate limiting.** There is a global 100 requests per minute limiter and also a 10 requests per 15 minutes limiter for login/register routes.
 - **Structured logging.** Logging is done by Pino.
-- **Two-stage Docker builds.** Production docker sets the NGINX inside the frontend but the developement docker sets a seperate NGINX container to handle the proxies.
+- **Two-stage Docker builds.** Production docker runs the NGINX inside the frontend but the development docker sets a separate NGINX container to handle the proxies.
 
 ---
 
@@ -107,22 +107,22 @@ Docker Compose (dev + prod) · multi-stage Dockerfiles · Nginx for static + rev
 
 ---
 
-## How it works?
+## How does it works?
 
 
 ### Creating a short URL `POST /api/urls/shorten`
 
 1. **Normalize**: lowercase the protocol and the hostname, add `https://` to the front of it if missing, sort the params and remove the ending `/` if exists.
 2. **Hash**: SHA-256 of the normalized URL → `urlHash`.
-3. **Filter probe**: If the `urlHash` lives in the Cuckoo Filter look up the database for it. If it exists just add the owner to the `user_urls` table, return the existing shortId. If it doesn't exist continue.
+3. **Filter probe**: If the `urlHash` lives in the Cuckoo Filter, look up the database for it. If it exists just add the owner to the `user_urls` table, return the existing shortId. If it doesn't exist continue.
 4. **Pool pop**: Just `LPOP` from the `shortIdPool` that lives in Redis. Creates a new `nanoid(6)` if the pool is empty.
 5. **Insert**: Write all the information to the `urls` table in the database. Connect the owner id to the url id in the `user_urls` table.
 6. **Filter add**: Add the shortId and the hash to the Cuckoo Filter.
 
 ### Redirecting `GET /:shortId`
 
-1. **Filter gate**: Check if the shortId exists in the Cuckoo Filter. False → instant `redirect → /not-found`. **No DB query, ever.** Since a Cuckoo Filter cannot give a false negative each `:shortId` that doesn't exist gets redirected to the `not-found` page.
-2. **Cached lookup**: `getOrSetCache` reads the URL from Redis (key = `shortId`). If it doesn't exist on the cache looks at the database and add it to the cache for 30 mins.
+1. **Filter gate**: Check if the shortId exists in the Cuckoo Filter. False → instant `redirect → /not-found`. **No DB query, ever.** Since a Cuckoo Filter cannot give a false negative, each `:shortId` that doesn't exist gets redirected to the `not-found` page.
+2. **Cached lookup**: `getOrSetCache` reads the URL from Redis (key = `shortId`). If it doesn't exist in the cache, look at the database and add it to the cache for 30 mins.
 3. **Redirect first**: Redirect the user to the URL immediately. 
 4. **Count later**: `hIncrBy("clicks", shortId, 1)` is fired after the redirect happens. If there is an error here it is logged but doesn't stop the redirection. Counts are added to the database by a worker later on.
 
@@ -135,14 +135,14 @@ Docker Compose (dev + prod) · multi-stage Dockerfiles · Nginx for static + rev
 
 ### Keeping a shortId pool `idGenWorker` (every 10s)
 
-If shortId pool is less than 300:
-1. Generate enough `nanoid(6)` to top it.
+If the shortId pool has less than 300 ids:
+1. Generate enough `nanoid(6)` to top it up to 1000.
 2. Remove any that already exist in `cf:shortIds`.
 3. Add the ones not removed to the pool. 
 
 ### Removing expired urls `cleanupWorker` (boot + daily 03:00)
 
-1. Select every url that has an expiration date in the past by the check time.
+1. Select every url that has an expiration date in the past.
 2. Delete the row for each url, remove the shortId and the hash from the Cuckoo Filter, drop the cache, add the freed shortId back into the end of the pool.
 
 
@@ -199,7 +199,7 @@ url-shortener/
 
 ## Quick start
 
-You just need to `docker compose` after cloing the git repo. You need Docker Desktop (or Docker Engine + Compose v2) installed and that's it.
+You just need to `docker compose` after cloning the git repo. You need Docker Desktop (or Docker Engine + Compose v2) installed and that's it.
 
 ### 1. Clone
 
@@ -225,7 +225,7 @@ This starts five containers: Postgres, Redis, the backend (with hot reload), the
 
 ### 4. Run the database migrations
 
-The first time only Drizzle migrations are applied from inside the backend container:
+TThe first time only, apply Drizzle migrations from inside the backend container:
 
 ```bash
 docker compose -f infra/docker/docker-compose.yml exec backend npm run db:migrate
