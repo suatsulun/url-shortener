@@ -39,6 +39,8 @@ In this repo there is a full-stack, self-hostable URL shortener uses React+Types
 
 There is a dashboard where you can see all your shortened urls, click counts and their expiration dates. In the API when a URL is sent by the user, the API normalizes it (adding https:// if missing, lowercasing the protocol+hostname, ordering the params, and deleting the ending "/"), hashes it, gets a shortId from the Redis pool (creates a shortId with nanoid(6) if there are none), stores it in the database and links the user id to the url id after. 
 
+You can see a running version of this project in [https://suatsulun.com](https://suatsulun.com)
+
 ---
 
 ## Feature highlights
