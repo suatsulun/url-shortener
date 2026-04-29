@@ -18,47 +18,40 @@
 
 ## Table of contents
 
-- [Why this project](#why-this-project)
+- [The Project](#the-project)
 - [Feature highlights](#feature-highlights)
 - [Tech stack](#tech-stack)
 - [Architecture](#architecture)
-- [How a short URL is born — and how it dies](#how-a-short-url-is-born--and-how-it-dies)
+- [How it works?](#how-it-works)
 - [Repository layout](#repository-layout)
 - [Quick start](#quick-start)
-- [Local development without Docker](#local-development-without-docker)
-- [Environment variables](#environment-variables)
 - [Available scripts](#available-scripts)
-- [API reference](#api-reference)
-- [Database schema](#database-schema)
 - [Production deployment](#production-deployment)
-- [Testing & CI](#testing--ci)
-- [Roadmap](#roadmap)
 - [License](#license)
 
 ---
 
-## Why this project
+## The Project
 
-URL shorteners are a deceptively simple "build a CRUD app" exercise — until you actually care about the things production traffic cares about: redirect latency on the hot path, what happens when someone hammers a non-existent short ID, how clicks are counted at scale, and how the system reclaims short IDs over time.
+This URL shortener was written by me to both to have it as a big project for my portfolio and to learn how to use some of the tools I wanted to work with. Even though it won't see thousands of users I wanted to build it to withstand tens of thousands of requests per second. So I used some tools that weren't necessary to optimize the performance and I also used some tools that would drop the performance just because I wanted to experiment with them.
 
-This repo is a full-stack, self-hostable URL shortener that takes those questions seriously. It uses **Redis Cuckoo Filters** to short-circuit 404s before they touch the database, a **pre-generated short ID pool** so URL creation never blocks on `nanoid → uniqueness check → retry` loops, and **BullMQ workers** to flush click counters in batches and reclaim expired IDs. The frontend is a fully-typed React 19 SPA with cookie-based auth, Redux Toolkit Query, and Base UI primitives.
+In this repo there is a full-stack, self-hostable URL shortener uses React+Typescript for the frontend, Express for the backend, Postgres for the database and Redis for the cache. They all run on a docker container.
 
-It is built to be read. Every architectural decision below is implemented in the code, not aspirational.
+There is a dashboard where you can see all your shortened urls, click counts and their expiration dates. In the API when a URL is sent by the user, the API normalizes it (adding https:// if missing, lowercasing the protocol+hostname, ordering the params, and deleting the ending "/"), hashes it, gets a shortId from the Redis pool (creates a shortId with nanoid(6) if there are none), stores it in the database and links the user id to the url id after. 
 
 ---
 
 ## Feature highlights
 
-- **Sub-millisecond 404 path.** Unknown short IDs are rejected by a Cuckoo Filter in Redis without ever hitting Postgres.
-- **Pre-generated ID pool.** A background worker keeps 1,000 collision-free short IDs warm in a Redis list — `POST /shorten` just `LPOP`s.
-- **Duplicate URL deduplication.** Identical URLs (after normalization + SHA-256 hashing) collapse to one row, with multi-user ownership tracked in a join table.
-- **Async click counting.** Redirects increment a Redis hash; a worker flushes counts to Postgres every 60s and slides expiry forward.
-- **Sliding 30-day TTL.** URLs expire 30 days after last access. A daily 3 AM cron job batches cleanup, frees IDs back to the pool, and updates the filters.
-- **Cookie-based JWT auth.** HTTP-only cookies, CORS with credentials, separate admin key for ops endpoints.
-- **Rate limiting.** Global 100 req/min limiter plus a stricter 10 req/15min limiter on auth routes.
-- **Structured logging.** Pino with request-scoped child loggers via `pino-http`.
-- **Two-stage Docker builds.** Production images run as non-root, with the frontend served by Nginx and same-origin API proxying.
-- **Typed end-to-end.** Zod schemas at the API boundary, Drizzle ORM types in the data layer, generated types from the same schemas in the React app.
+- **Sub-millisecond 404 path.** Since there is a Cuckoo Filter in Redis if the shortId doesnt exist there you get a 404 lightning fast.
+- **Pre-generated ID pool.** A background worker keeps 1,000 shortIds warm in a Redis list and tops it to 1000 if they get below a certain number.
+- **Duplicate URL deduplication.** URLs get normalized first. If the normalized URL exists on the database the user who added it again is just added to a joined database that holds the URL-Owner relationships.
+- **Async click counting.** Each redirect sends an incrementation to the Redis connected to the shortId, and a worker checks those incrementations and add them in one minute batches to the database.
+- **Sliding 30-day TTL.** URLs expire 30 days after last access. A daily worker checks the expiration dates everyday at 3:00 AM and deletes the ones that are expired.
+- **Cookie-based JWT auth.** Authentication is checked via an HTTP-only cookie.
+- **Rate limiting.** There is a global 100 requests per minute limiter and also a 10 requests per 15 minutes limiter for login/register routes.
+- **Structured logging.** Logging is done by Pino.
+- **Two-stage Docker builds.** Production docker sets the NGINX inside the frontend but the developement docker sets a seperate NGINX container to handle the proxies.
 
 ---
 
@@ -110,64 +103,50 @@ Docker Compose (dev + prod) · multi-stage Dockerfiles · Nginx for static + rev
                               └──────────────┘    └──────────────┘    └──────────────┘
 ```
 
-### Request layering
-
-`routes/` → `controllers/` → `services/` → `db/` (Drizzle) + `lib/redis.ts`. Services own all DB transactions and Redis side-effects; controllers parse input and shape responses. Validation is a middleware factory that compiles Zod schemas against `body`, `params`, or `query`.
-
-### Workers run in-process
-
-All three BullMQ schedulers are started from `apps/backend/src/index.ts` after Redis connects. The workers run alongside the HTTP server in the same Node process — no separate worker container required. For deployments with many backend replicas, you would extract these into their own service; the architecture is already structured to support that move (each `*Queue.ts` exports a `Queue`, each `*Worker.ts` is a side-effect import).
-
 ---
 
-## How a short URL is born — and how it dies
+## How it works?
 
-This is the part that makes the project interesting. Skim the labels; the implementation is in [apps/backend/src/services/urlService.ts](apps/backend/src/services/urlService.ts).
 
-### Creating a short URL — `POST /api/urls/shorten`
+### Creating a short URL `POST /api/urls/shorten`
 
-1. **Normalize**: lowercase scheme + host, sort query params, strip trailing slash, prepend `https://` if missing. ([apps/backend/src/lib/urlUtils.ts](apps/backend/src/lib/urlUtils.ts))
+1. **Normalize**: lowercase the protocol and the hostname, add `https://` to the front of it if missing, sort the params and remove the ending `/` if exists.
 2. **Hash**: SHA-256 of the normalized URL → `urlHash`.
-3. **Filter probe**: `CF.EXISTS cf:urlHashes <hash>`. If positive, look up the existing row and just add the user to `user_urls`. New owner, no new row, no new short ID.
-4. **Pool pop**: `LPOP shortIdPool`. Falls back to `nanoid(6)` if the pool is empty (the worker is supposed to keep this from happening).
-5. **Insert**: transactional `INSERT` into `urls` + `user_urls`, with `expiresAt = now + 30 days`.
-6. **Filter add**: `CF.ADD cf:shortIds` + `CF.ADD cf:urlHashes`.
+3. **Filter probe**: If the `urlHash` lives in the Cuckoo Filter look up the database for it. If it exists just add the owner to the `user_urls` table, return the existing shortId. If it doesn't exist continue.
+4. **Pool pop**: Just `LPOP` from the `shortIdPool` that lives in Redis. Creates a new `nanoid(6)` if the pool is empty.
+5. **Insert**: Write all the information to the `urls` table in the database. Connect the owner id to the url id in the `user_urls` table.
+6. **Filter add**: Add the shortId and the hash to the Cuckoo Filter.
 
-### Redirecting — `GET /:shortId`
+### Redirecting `GET /:shortId`
 
-This is the **hot path**. Latency targets the lower bound of "Redis round-trip + 302".
+1. **Filter gate**: `CF.EXISTS cf:shortIds <id>`. False → instant `redirect → /not-found`. **No DB query, ever.** Since a Cuckoo Filter cannot give a false negative each `:shortId` that doesn't exist gets redirected to the `not-found` page.
+2. **Cached lookup**: `getOrSetCache` reads the URL from Redis (key = `shortId`). If it doesn't exist on the cache looks at the database and add it to the cache for 30 mins.
+3. **Redirect first**: Redirect the user to the URL immediately. 
+4. **Count later**: `HINCRBY clicks <shortId> 1` is fired after the redirect happens. If there is an error here it is logged but doesn't stop the redirection. Counts are added to the database by a worker later on.
 
-1. **Filter gate**: `CF.EXISTS cf:shortIds <id>`. False → instant `302 → /not-found`. **No DB query, ever.** False positives are statistically rare and only cost an extra DB miss; false negatives are impossible by construction.
-2. **Cached lookup**: `getOrSetCache` reads the destination URL from Redis (key = `shortId`), populating from Postgres on miss.
-3. **Redirect first**: respond with `302` immediately.
-4. **Count later**: `HINCRBY clicks <shortId> 1` is fire-and-forget after the redirect is sent. Failure here logs but never blocks the redirect.
+### Keeping track of clicks `flushWorker` (every 60s)
 
-### Counting clicks — `flushWorker` (every 60s)
+1. Worker gets every click count connected to each shortId from the Redis cache.
+2. Updates the click counter on each url row and updates their expiration date.
+3. Delete the counts from Redis.
 
-1. `HGETALL clicks` → `{shortId: count}`.
-2. `bulkUpdateClicks` issues parallel updates: `clicks += count`, `lastAccessedAt = now`, `expiresAt = now + 30 days`.
-3. `DEL clicks`.
 
-This is why dashboard counters lag the actual click — by design. It trades real-time accuracy for ~60×fewer write transactions on hot links.
+### Keeping a shortId pool `idGenWorker` (every 10s)
 
-### Keeping the ID pool warm — `idGenWorker` (every 10s)
+If shortId pool is less than 300:
+1. Generate enough `nanoid(6)` to top it.
+2. Remove any that already exist in `cf:shortIds`.
+3. `RPUSH` the ones not removed.
 
-If `LLEN shortIdPool < 300`, top up to 1000:
-1. Generate `nanoid(6)` candidates.
-2. Filter out any that already exist in `cf:shortIds`.
-3. `RPUSH` the survivors.
+### Removing expired urls `cleanupWorker` (boot + daily 03:00)
 
-### Reclaiming dead IDs — `cleanupWorker` (boot + daily 03:00)
+1. Select every url that has an expiration date in the past by the check time.
+2. Delete the row for each url, remove the shortId and the hash from the Cuckoo Filter, drop the cache, `RPUSH` the freed shortId back into the pool.
 
-1. `SELECT … WHERE expires_at < NOW() LIMIT 100` (paginated).
-2. For each: delete the join rows + the URL row, `CF.DEL` from both filters, drop the cache, `RPUSH` the freed short ID back onto the pool.
-3. Loop until no expired rows remain.
 
-A manual trigger is also exposed at `POST /api/urls/admin/cleanup` (requires the `x-admin-key` header).
+### Multi-owner URL
 
-### Multi-owner URL model
-
-`user_urls` is a join table. If Alice and Bob both shorten `https://example.com/foo`, both get the same `shortId` and both have rows in `user_urls`. Deleting Alice's link removes only her row. The `urls` row (and the short ID) is reclaimed only when the last owner is removed — see [`removeUrlOwnership`](apps/backend/src/services/urlService.ts).
+`user_urls` is a join table. If Alice and Bob both shorten `https://example.com/foo`, both get the same `shortId` and both have rows in `user_urls`. Deleting Alice's link removes only her row. The `urls` row (and the short ID) is reclaimed only when the last owner is removed.
 
 ---
 
@@ -218,7 +197,7 @@ url-shortener/
 
 ## Quick start
 
-The fastest way to get running is `docker compose`. You need Docker Desktop (or Docker Engine + Compose v2) installed and that's it — no local Node, Postgres, or Redis required.
+You just need to `docker compose` after cloing the git repo. You need Docker Desktop (or Docker Engine + Compose v2) installed and that's it.
 
 ### 1. Clone
 
@@ -231,10 +210,11 @@ cd url-shortener
 
 ```bash
 cp apps/backend/.env.example apps/backend/.env
-# Edit apps/backend/.env — at minimum, set JWT_SECRET to a long random string.
 ```
 
-The frontend `.env` is already wired for the dockerized stack (`http://localhost:8080/api`). If you only run the frontend natively, change it to `http://localhost:3001/api`.
+```bash
+cp apps/frontend/.env.example apps/frontend/.env
+```
 
 ### 3. Bring up the stack
 
@@ -262,59 +242,6 @@ Visit **http://localhost:8080**, register an account, and shorten a link. The re
 docker compose -f infra/docker/docker-compose.yml down          # stop
 docker compose -f infra/docker/docker-compose.yml down -v       # stop + wipe Postgres/Redis volumes
 ```
-
----
-
-## Local development without Docker
-
-If you'd rather run the apps natively against dockerized Postgres + Redis only:
-
-```bash
-# 1. Start just the data services
-docker compose -f infra/docker/docker-compose.yml up -d postgres redis
-
-# 2. Backend
-cd apps/backend
-cp .env.example .env                 # edit JWT_SECRET, etc.
-npm install
-npm run db:migrate
-npm run dev                          # http://localhost:3001
-
-# 3. Frontend (in another terminal)
-cd apps/frontend
-echo "VITE_API_BASE_URL=http://localhost:3001/api" > .env
-npm install
-npm run dev                          # http://localhost:5173
-```
-
-You can also run both apps concurrently from the repo root:
-
-```bash
-npm install
-npm run dev    # uses concurrently to start backend + frontend
-```
-
----
-
-## Environment variables
-
-### Backend (`apps/backend/.env`)
-
-| Variable | Required | Purpose |
-|---|---|---|
-| `DATABASE_URL` | yes | Postgres connection string. |
-| `REDIS_URL` | yes | Redis connection string. **Throws at startup if missing.** |
-| `JWT_SECRET` | yes | Signing key for auth cookies. Use a long random string. |
-| `ADMIN_KEY` | yes | Value expected in `x-admin-key` for admin routes. |
-| `FRONTEND_URL` | yes | Origin allowed by CORS, also used to build returned `shortUrl`. |
-| `PORT` | no | Default `3001`. |
-| `LOG_LEVEL` | no | Pino level. Default `info`. |
-
-### Frontend (`apps/frontend/.env`)
-
-| Variable | Required | Purpose |
-|---|---|---|
-| `VITE_API_BASE_URL` | yes | Where the SPA sends API calls. `/api` in same-origin prod, `http://localhost:8080/api` in dockerized dev, `http://localhost:3001/api` for native dev. |
 
 ---
 
@@ -347,63 +274,6 @@ From **`apps/frontend/`**: the standard `dev`, `build`, `preview`, `lint`, `form
 
 ---
 
-## API reference
-
-All endpoints are JSON. Authenticated endpoints expect the `token` HTTP-only cookie set by `/api/users/login`. The frontend's axios instance sets `withCredentials: true` automatically.
-
-### Auth — `/api/users`
-
-| Method | Path | Auth | Body |
-|---|---|---|---|
-| `POST` | `/register` | — | `{ username, email, password }` |
-| `POST` | `/login` | — | `{ identifier, password }` |
-| `POST` | `/logout` | cookie | — |
-| `GET`  | `/me` | cookie | — |
-| `PATCH` | `/me` | cookie | `{ username?, email? }` |
-| `PATCH` | `/me/password` | cookie | `{ currentPassword, newPassword }` |
-| `DELETE` | `/me` | cookie | — |
-
-`/register` and `/login` are rate-limited to 10 attempts per 15 minutes per IP.
-
-### URLs — `/api/urls`
-
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| `POST` | `/shorten` | cookie | Body: `{ originalUrl }`. Returns `{ shortId, shortUrl, originalUrl }`. |
-| `GET`  | `/me` | cookie | List the calling user's URLs. |
-| `DELETE` | `/:shortId` | cookie | Remove the calling user's ownership of a URL. |
-| `GET`  | `/:shortId` | — | **The redirect endpoint.** `302` to the original URL, or to `/not-found` if unknown. |
-| `POST` | `/admin/cleanup` | `x-admin-key` | Manually trigger the expiry sweep. |
-
-### Health
-
-`GET /api/health` → `{ status: "ok" }`. Excluded from access logs.
-
----
-
-## Database schema
-
-Three tables, owned by Drizzle. See [apps/backend/src/db/schema/](apps/backend/src/db/schema/).
-
-```
-users                       urls                              user_urls (join)
-─────                       ────                              ─────────
-id  PK identity             id  PK identity                   user_id  FK users.id  ON DELETE CASCADE
-username  UNIQUE            short_id  UNIQUE                  url_id   FK urls.id
-email     UNIQUE            original_url                      created_at
-password_hash               url_hash  UNIQUE                  PK (user_id, url_id)
-created_at                  clicks    DEFAULT 0
-                            created_at
-                            last_accessed_at
-                            expires_at
-```
-
-`urls.url_hash` is a SHA-256 of the normalized URL; its uniqueness is what makes deduplication work. `urls.short_id` is what users see in the public link.
-
-Migrations live at [apps/backend/src/db/migrations](apps/backend/src/db/migrations) and are applied via `npm run db:migrate`. After editing a schema file, regenerate with `npm run db:generate`.
-
----
-
 ## Production deployment
 
 The repo ships with a separate prod stack: [infra/docker/docker-compose.prod.yml](infra/docker/docker-compose.prod.yml). What it changes vs. dev:
@@ -431,37 +301,14 @@ Put a TLS-terminating reverse proxy (Caddy, Traefik, or another Nginx) in front 
 
 ---
 
-## Testing & CI
-
-- **Backend unit tests** with Vitest cover URL normalization/hashing and the validation middleware. Run with `npm test` from `apps/backend/`.
-- **GitHub Actions** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs typecheck, lint, test, and build for both apps on every push to `main` and every PR.
-- **Pre-commit** is enforced via Husky + lint-staged: Prettier on all changed files, ESLint `--fix` on frontend changes.
-
----
-
-## Roadmap
-
-Things this project deliberately stops short of, but which would be the natural next steps:
-
-- **Custom aliases** (`POST /shorten` with an explicit `slug`).
-- **Per-link analytics** (referrer, user-agent, country) — the redirect path already has the right hooks.
-- **QR code generation** at link-creation time.
-- **OAuth providers** (Google, GitHub) alongside username/password.
-- **Multi-region Redis / read replicas** for the redirect path.
-- **Workers as a separate service** for horizontal scaling beyond a single backend instance.
-
----
-
 ## License
 
-Released under the [MIT License](LICENSE). You're free to use, modify, and distribute this code — just keep the copyright notice.
+Released under the [MIT License](LICENSE). You're free to use, modify, and distribute this code. Just keep the copyright notice.
 
 ---
 
 <div align="center">
 
 Built by **[Suat Sülün](https://github.com/suatsulun)** as a portfolio project demonstrating end-to-end ownership of a small but non-trivial production system.
-
-If you're a hiring manager reading this — the most interesting parts of the codebase are [`apps/backend/src/services/urlService.ts`](apps/backend/src/services/urlService.ts), [`apps/backend/src/jobs/`](apps/backend/src/jobs/), and the Cuckoo-Filter integration in [`apps/backend/src/lib/redis.ts`](apps/backend/src/lib/redis.ts). Start there.
 
 </div>
