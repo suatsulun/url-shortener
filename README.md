@@ -119,10 +119,10 @@ Docker Compose (dev + prod) · multi-stage Dockerfiles · Nginx for static + rev
 
 ### Redirecting `GET /:shortId`
 
-1. **Filter gate**: `CF.EXISTS cf:shortIds <id>`. False → instant `redirect → /not-found`. **No DB query, ever.** Since a Cuckoo Filter cannot give a false negative each `:shortId` that doesn't exist gets redirected to the `not-found` page.
+1. **Filter gate**: Check if the shortId exists in the Cuckoo Filter. False → instant `redirect → /not-found`. **No DB query, ever.** Since a Cuckoo Filter cannot give a false negative each `:shortId` that doesn't exist gets redirected to the `not-found` page.
 2. **Cached lookup**: `getOrSetCache` reads the URL from Redis (key = `shortId`). If it doesn't exist on the cache looks at the database and add it to the cache for 30 mins.
 3. **Redirect first**: Redirect the user to the URL immediately. 
-4. **Count later**: `HINCRBY clicks <shortId> 1` is fired after the redirect happens. If there is an error here it is logged but doesn't stop the redirection. Counts are added to the database by a worker later on.
+4. **Count later**: `hIncrBy("clicks", shortId, 1)` is fired after the redirect happens. If there is an error here it is logged but doesn't stop the redirection. Counts are added to the database by a worker later on.
 
 ### Keeping track of clicks `flushWorker` (every 60s)
 
@@ -136,12 +136,12 @@ Docker Compose (dev + prod) · multi-stage Dockerfiles · Nginx for static + rev
 If shortId pool is less than 300:
 1. Generate enough `nanoid(6)` to top it.
 2. Remove any that already exist in `cf:shortIds`.
-3. `RPUSH` the ones not removed.
+3. Add the ones not removed to the pool. 
 
 ### Removing expired urls `cleanupWorker` (boot + daily 03:00)
 
 1. Select every url that has an expiration date in the past by the check time.
-2. Delete the row for each url, remove the shortId and the hash from the Cuckoo Filter, drop the cache, `RPUSH` the freed shortId back into the pool.
+2. Delete the row for each url, remove the shortId and the hash from the Cuckoo Filter, drop the cache, add the freed shortId back into the end of the pool.
 
 
 ### Multi-owner URL
@@ -210,9 +210,6 @@ cd url-shortener
 
 ```bash
 cp apps/backend/.env.example apps/backend/.env
-```
-
-```bash
 cp apps/frontend/.env.example apps/frontend/.env
 ```
 
