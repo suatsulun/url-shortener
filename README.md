@@ -225,7 +225,7 @@ This starts five containers: Postgres, Redis, the backend (with hot reload), the
 
 ### 4. Run the database migrations
 
-The first time only — Drizzle migrations are applied from inside the backend container:
+The first time only Drizzle migrations are applied from inside the backend container:
 
 ```bash
 docker compose -f infra/docker/docker-compose.yml exec backend npm run db:migrate
