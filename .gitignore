@@ -18,13 +18,6 @@ build/
 .env.prod
 
 # ───────────────────────────────
-# Drizzle
-# ───────────────────────────────
-# Keep the migrations folder but ignore the journal
-# (journal is auto-generated, not meant to be edited)
-**/migrations/meta/_journal.json
-
-# ───────────────────────────────
 # Logs
 # ───────────────────────────────
 *.log

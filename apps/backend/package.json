@@ -16,7 +16,7 @@
     "test:ui": "vitest --ui",
     "clean": "rm -rf dist",
     "db:generate": "drizzle-kit generate --config=src/drizzle.config.ts",
-    "db:migrate": "drizzle-kit migrate --config=src/drizzle.config.ts",
+    "db:migrate": "tsx src/db/migrate.ts",
     "db:studio": "drizzle-kit studio --config=src/drizzle.config.ts"
   },
   "keywords": [],

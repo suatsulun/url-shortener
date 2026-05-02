@@ -293,7 +293,7 @@ cp apps/backend/.env.prod.example infra/docker/.env
 docker compose -f infra/docker/docker-compose.prod.yml up -d --build
 
 # 3. Apply migrations (one-shot)
-docker compose -f infra/docker/docker-compose.prod.yml exec backend npx drizzle-kit migrate --config=src/drizzle.config.ts
+docker compose -f infra/docker/docker-compose.prod.yml exec backend npm run db:migrate
 ```
 
 Put a TLS-terminating reverse proxy (Caddy, Traefik, or another Nginx) in front of port 3000 and you're done.
